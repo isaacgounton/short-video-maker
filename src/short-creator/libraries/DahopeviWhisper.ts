@@ -59,8 +59,8 @@ export class DahopeviWhisper implements IWhisper {
         },
         {
           headers: {
-            "Content-Type": "application/json",
-            ...(this.apiKey && { "Authorization": `Bearer ${this.apiKey}` })
+            "Content-Type": "application/json"
+            // Local dahopevi container doesn't require authentication
           },
           timeout: 300000 // 5 minutes timeout
         }
