@@ -119,7 +119,7 @@ export const renderConfig = z.object({
 });
 export type RenderConfig = z.infer<typeof renderConfig>;
 
-export type Voices = `${VoiceEnum}` | string; // Allow both Kokoro voices and edge-tts voices
+export type Voices = `${VoiceEnum}`;
 
 export type Video = {
   id: string;

@@ -1,5 +1,55 @@
-node_modules
+# Version control
 .git
 .gitignore
+.gitattributes
+
+# Dependencies
+node_modules
+.pnpm-store
+pnpm-debug.log
+npm-debug.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Development files
+__tests__
+__mocks__
+test
+tests
+*.test.ts
+*.spec.ts
+*.test.js
+*.spec.js
+coverage
+.vscode
+.idea
 *.md
+!README.md
+*.log
+
+# Build output
 dist
+build
+out
+.cache
+
+# Temporary files
+tmp
+*.tmp
+.DS_Store
+*.swp
+*.swo
+
+# Docker files
+Dockerfile*
+.docker
+docker-compose*
+
+# Other
+.editorconfig
+.prettierrc
+.eslintrc*
+tsconfig.tsbuildinfo
