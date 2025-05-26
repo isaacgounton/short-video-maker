@@ -7,6 +7,8 @@ import {
 import { logger } from "../../config";
 
 export class Kokoro {
+  private cachedVoices: string[] | null = null; // Cache for API voices
+  
   constructor(private dahopevi_url: string, private api_key?: string) {}
 
   async generate(
@@ -103,8 +105,8 @@ export class Kokoro {
   }
 
   static async init(dtype: kokoroModelPrecision): Promise<Kokoro> {
-    // Get dahopevi URL from environment or default to localhost
-    const dahopevi_url = process.env.DAHOPEVI_URL || 'http://localhost:8080';
+    // Get dahopevi URL from environment or default to public API
+    const dahopevi_url = process.env.DAHOPEVI_BASE_URL || process.env.DAHOPEVI_URL || 'https://api.dahopevi.com';
     const api_key = process.env.DAHOPEVI_API_KEY;
     
     logger.debug({ dahopevi_url, dtype }, "Initializing Kokoro with dahopevi TTS service");
@@ -115,6 +117,19 @@ export class Kokoro {
     try {
       await kokoro.testConnection();
       logger.info("Successfully connected to dahopevi TTS service");
+      
+      // Fetch and cache available voices from API
+      try {
+        const voices = await kokoro.getVoicesFromDahopevi();
+        if (voices.length > 0) {
+          logger.info({ voiceCount: voices.length }, "Successfully fetched kokoro voices from dahopevi API");
+        } else {
+          logger.warn("No kokoro voices found in dahopevi API, will use fallback list");
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.warn({ error: errorMessage }, "Could not fetch voices during initialization, will use fallback list");
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.warn({ error: errorMessage }, "Could not verify dahopevi connection, but continuing");
@@ -140,10 +155,43 @@ export class Kokoro {
     }
   }
 
-  listAvailableVoices(): Voices[] {
-    // Return all available voices from the enum
-    const voices = Object.values(VoiceEnum) as Voices[];
-    return voices;
+  listAvailableVoices(): string[] {
+    // If we have cached voices from API, use them, otherwise use fallback
+    if (this.cachedVoices) {
+      return this.cachedVoices;
+    }
+    
+    // Fallback list with current Kokoro voice enum values if API is not available
+    return [
+      "af_heart",
+      "af_alloy", 
+      "af_aoede",
+      "af_bella",
+      "af_jessica",
+      "af_kore",
+      "af_nicole",
+      "af_nova",
+      "af_river",
+      "af_sarah",
+      "af_sky",
+      "am_adam",
+      "am_echo",
+      "am_eric",
+      "am_fenrir",
+      "am_liam",
+      "am_michael",
+      "am_onyx",
+      "am_puck",
+      "am_santa",
+      "bf_emma",
+      "bf_isabella",
+      "bm_george",
+      "bm_lewis",
+      "bf_alice",
+      "bf_lily",
+      "bm_daniel",
+      "bm_fable",
+    ];
   }
 
   async getVoicesFromDahopevi(): Promise<string[]> {
@@ -158,10 +206,18 @@ export class Kokoro {
         timeout: 10000
       });
 
-      return response.data.voices || [];
+      // Filter for kokoro voices and cache them
+      const kokoroVoices = response.data.voices
+        .filter((voice: { engine: string }) => voice.engine === "kokoro")
+        .map((voice: { name: string }) => voice.name) || [];
+      
+      // Cache the voices for future use
+      this.cachedVoices = kokoroVoices;
+      
+      return kokoroVoices;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.warn({ error: errorMessage }, "Could not fetch voices from dahopevi");
+      logger.warn({ error: errorMessage }, "Could not fetch kokoro voices from dahopevi");
       return [];
     }
   }

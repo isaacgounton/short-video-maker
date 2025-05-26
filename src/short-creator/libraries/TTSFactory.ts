@@ -9,7 +9,7 @@ export interface TTSService {
     audio: ArrayBuffer;
     audioLength: number;
   }>;
-  listAvailableVoices(): Voices[];
+  listAvailableVoices(): string[];
 }
 
 export class TTSFactory {
@@ -51,8 +51,8 @@ export class TTSFactory {
     return service;
   }
 
-  static async getAllAvailableVoices(): Promise<Record<TTSEngineEnum, Voices[]>> {
-    const voices: Record<string, Voices[]> = {};
+  static async getAllAvailableVoices(): Promise<Record<TTSEngineEnum, string[]>> {
+    const voices: Record<string, string[]> = {};
     
     for (const engine of Object.values(TTSEngineEnum)) {
       try {
@@ -64,7 +64,7 @@ export class TTSFactory {
       }
     }
     
-    return voices as Record<TTSEngineEnum, Voices[]>;
+    return voices as Record<TTSEngineEnum, string[]>;
   }
 
   static clearCache(): void {

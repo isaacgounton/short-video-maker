@@ -57,7 +57,9 @@ const VideoCreator: React.FC = () => {
   const [voices, setVoices] = useState<VoiceEnum[]>([]);
   const [musicTags, setMusicTags] = useState<MusicMoodEnum[]>([]);
   const [ttsEngines, setTtsEngines] = useState<TTSEngineEnum[]>([]);
+  const [voicesForEngine, setVoicesForEngine] = useState<Record<string, VoiceEnum[]>>({});
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [loadingVoices, setLoadingVoices] = useState(false);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -71,6 +73,10 @@ const VideoCreator: React.FC = () => {
         setVoices(voicesResponse.data);
         setMusicTags(musicResponse.data);
         setTtsEngines(ttsEnginesResponse.data.engines);
+        
+        // Load voices for all engines
+        const allVoicesResponse = await axios.get("/api/tts-voices");
+        setVoicesForEngine(allVoicesResponse.data.voices);
       } catch (err) {
         console.error("Failed to fetch options:", err);
         setError(
@@ -83,6 +89,30 @@ const VideoCreator: React.FC = () => {
 
     fetchOptions();
   }, []);
+
+  // Effect to handle TTS engine change
+  useEffect(() => {
+    const fetchVoicesForEngine = async (engine: TTSEngineEnum) => {
+      if (!voicesForEngine[engine]) {
+        setLoadingVoices(true);
+        try {
+          const response = await axios.get(`/api/tts-voices/${engine}`);
+          setVoicesForEngine(prev => ({
+            ...prev,
+            [engine]: response.data.voices
+          }));
+        } catch (err) {
+          console.error(`Failed to fetch voices for ${engine}:`, err);
+        } finally {
+          setLoadingVoices(false);
+        }
+      }
+    };
+
+    if (config.ttsEngine && ttsEngines.length > 0) {
+      fetchVoicesForEngine(config.ttsEngine);
+    }
+  }, [config.ttsEngine, ttsEngines, voicesForEngine]);
 
   const handleAddScene = () => {
     setScenes([...scenes, { text: "", searchTerms: "" }]);
@@ -107,7 +137,23 @@ const VideoCreator: React.FC = () => {
   };
 
   const handleConfigChange = (field: keyof RenderConfig, value: any) => {
-    setConfig({ ...config, [field]: value });
+    const newConfig = { ...config, [field]: value };
+    
+    // If TTS engine changes, reset voice to first available voice for that engine
+    if (field === 'ttsEngine' && voicesForEngine[value]) {
+      const availableVoices = voicesForEngine[value];
+      if (availableVoices.length > 0) {
+        newConfig.voice = availableVoices[0];
+      }
+    }
+    
+    setConfig(newConfig);
+  };
+
+  // Get available voices for current TTS engine
+  const getAvailableVoices = (): VoiceEnum[] => {
+    if (!config.ttsEngine) return [];
+    return voicesForEngine[config.ttsEngine] || [];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -336,12 +382,20 @@ const VideoCreator: React.FC = () => {
                   onChange={(e) => handleConfigChange("voice", e.target.value)}
                   label="Default Voice"
                   required
+                  disabled={loadingVoices}
                 >
-                  {Object.values(VoiceEnum).map((voice) => (
-                    <MenuItem key={voice} value={voice}>
-                      {voice}
+                  {loadingVoices ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={16} sx={{ mr: 1 }} />
+                      Loading voices...
                     </MenuItem>
-                  ))}
+                  ) : (
+                    getAvailableVoices().map((voice) => (
+                      <MenuItem key={voice} value={voice}>
+                        {voice}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </Grid>

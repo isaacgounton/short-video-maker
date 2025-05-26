@@ -61,9 +61,25 @@ export class EdgeTTS {
     }
   }
 
-  listAvailableVoices(): Voices[] {
-    // Return some common edge-tts voices - this should be updated to fetch from API dynamically
-    return ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo"] as Voices[];
+  listAvailableVoices(): string[] {
+    // Return common Edge TTS voices
+    return [
+      "en-US-AriaNeural",
+      "en-US-JennyNeural", 
+      "en-US-GuyNeural",
+      "en-US-AnaNeural",
+      "en-US-ChristopherNeural",
+      "en-US-EricNeural",
+      "en-US-MichelleNeural",
+      "en-US-RogerNeural",
+      "en-US-SteffanNeural",
+      "en-GB-SoniaNeural",
+      "en-GB-RyanNeural",
+      "en-GB-LibbyNeural",
+      "en-AU-NatashaNeural",
+      "en-AU-WilliamNeural",
+      "en-CA-ClaraNeural",
+    ];
   }
 
   async getAvailableVoicesFromAPI(): Promise<Voices[]> {

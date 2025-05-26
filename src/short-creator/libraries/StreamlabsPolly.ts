@@ -98,8 +98,8 @@ export class StreamlabsPolly {
   }
 
   static async init(): Promise<StreamlabsPolly> {
-    // Get dahopevi URL from environment or default to localhost
-    const dahopevi_url = process.env.DAHOPEVI_URL || 'http://localhost:8080';
+    // Get dahopevi URL from environment or default to public API
+    const dahopevi_url = process.env.DAHOPEVI_BASE_URL || process.env.DAHOPEVI_URL || 'https://api.dahopevi.com';
     const api_key = process.env.DAHOPEVI_API_KEY;
     
     logger.debug({ dahopevi_url }, "Initializing StreamlabsPolly with dahopevi TTS service");
@@ -135,10 +135,25 @@ export class StreamlabsPolly {
     }
   }
 
-  listAvailableVoices(): Voices[] {
-    // For streamlabs-polly, we'll need to fetch available voices from the API
-    // For now, return some common voices - this should be updated to fetch from API
-    return ["af_heart", "af_alloy", "af_nova"] as Voices[];
+  listAvailableVoices(): string[] {
+    // Return 15 common AWS Polly voices that are typically available in Streamlabs
+    return [
+      "Joanna",     // US English Female
+      "Matthew",    // US English Male  
+      "Amy",        // British English Female
+      "Brian",      // British English Male
+      "Emma",       // British English Female
+      "Joey",       // US English Male
+      "Justin",     // US English Male (Child)
+      "Kendra",     // US English Female
+      "Kimberly",   // US English Female
+      "Salli",      // US English Female
+      "Nicole",     // Australian English Female
+      "Russell",    // Australian English Male
+      "Ivy",        // US English Female (Child)
+      "Raveena",    // Indian English Female
+      "Aditi",      // Hindi Female
+    ];
   }
 
   async getVoicesFromDahopevi(): Promise<string[]> {
