@@ -10,6 +10,8 @@ interface EdgeTTSResponse {
 }
 
 export class EdgeTTS {
+  private cachedVoices: string[] = [];
+
   constructor(private apiKey: string, private baseUrl: string) {}
 
   async generate(
@@ -62,7 +64,13 @@ export class EdgeTTS {
   }
 
   listAvailableVoices(): string[] {
-    // Return common Edge TTS voices as fallback
+    // This method needs to be synchronous for the interface, but we need async API call
+    // We'll cache the voices and return them, or fallback to static list
+    if (this.cachedVoices && this.cachedVoices.length > 0) {
+      return this.cachedVoices;
+    }
+    
+    // Return common Edge TTS voices as fallback while we fetch from API
     return [
       "en-US-AriaNeural",
       "en-US-JennyNeural", 
@@ -103,6 +111,14 @@ export class EdgeTTS {
   }
 
   static async init(apiKey: string, baseUrl: string): Promise<EdgeTTS> {
-    return new EdgeTTS(apiKey, baseUrl);
+    const instance = new EdgeTTS(apiKey, baseUrl);
+    // Fetch voices from API and cache them
+    try {
+      instance.cachedVoices = await instance.getAvailableVoicesFromAPI();
+      logger.info(`Cached ${instance.cachedVoices.length} EdgeTTS voices from dahopevi API`);
+    } catch (error) {
+      logger.warn("Failed to fetch voices from API during initialization, using fallback list");
+    }
+    return instance;
   }
 }
