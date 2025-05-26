@@ -65,8 +65,9 @@ export class Kokoro {
         audioLength: audioLength,
       };
     } catch (error) {
-      logger.error({ error: error.message, text, voice }, "Failed to generate audio via dahopevi");
-      throw new Error(`TTS generation failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error({ error: errorMessage, text, voice }, "Failed to generate audio via dahopevi");
+      throw new Error(`TTS generation failed: ${errorMessage}`);
     }
   }
 
@@ -109,7 +110,8 @@ export class Kokoro {
       await kokoro.testConnection();
       logger.info("Successfully connected to dahopevi TTS service");
     } catch (error) {
-      logger.warn({ error: error.message }, "Could not verify dahopevi connection, but continuing");
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.warn({ error: errorMessage }, "Could not verify dahopevi connection, but continuing");
     }
     
     return kokoro;
@@ -127,7 +129,8 @@ export class Kokoro {
         timeout: 5000
       });
     } catch (error) {
-      throw new Error(`Cannot connect to dahopevi at ${this.dahopevi_url}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Cannot connect to dahopevi at ${this.dahopevi_url}: ${errorMessage}`);
     }
   }
 
@@ -151,7 +154,8 @@ export class Kokoro {
 
       return response.data.voices || [];
     } catch (error) {
-      logger.warn({ error: error.message }, "Could not fetch voices from dahopevi");
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.warn({ error: errorMessage }, "Could not fetch voices from dahopevi");
       return [];
     }
   }
