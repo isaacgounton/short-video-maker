@@ -10,7 +10,7 @@ interface EdgeTTSResponse {
 }
 
 export class EdgeTTS {
-  private cachedVoices: string[] = [];
+  private cachedVoices: string[] | null = null;
 
   constructor(private apiKey: string, private baseUrl: string) {}
 
@@ -63,14 +63,7 @@ export class EdgeTTS {
     }
   }
 
-  listAvailableVoices(): string[] {
-    // This method needs to be synchronous for the interface, but we need async API call
-    // We'll cache the voices and return them, or fallback to static list
-    if (this.cachedVoices && this.cachedVoices.length > 0) {
-      return this.cachedVoices;
-    }
-    
-    // Return common Edge TTS voices as fallback while we fetch from API
+  getFallbackVoices(): string[] {
     return [
       "en-US-AriaNeural",
       "en-US-JennyNeural", 
@@ -88,6 +81,12 @@ export class EdgeTTS {
       "en-AU-WilliamNeural",
       "en-CA-ClaraNeural",
     ];
+  }
+
+  listAvailableVoices(): string[] {
+    return this.cachedVoices && this.cachedVoices.length > 0 
+      ? this.cachedVoices 
+      : this.getFallbackVoices();
   }
 
   async getAvailableVoicesFromAPI(): Promise<string[]> {
@@ -112,12 +111,14 @@ export class EdgeTTS {
 
   static async init(apiKey: string, baseUrl: string): Promise<EdgeTTS> {
     const instance = new EdgeTTS(apiKey, baseUrl);
-    // Fetch voices from API and cache them
     try {
-      instance.cachedVoices = await instance.getAvailableVoicesFromAPI();
-      logger.info(`Cached ${instance.cachedVoices.length} EdgeTTS voices from dahopevi API`);
+      // Pre-fetch and cache voices during initialization
+      const voices = await instance.getAvailableVoicesFromAPI();
+      instance.cachedVoices = voices;
+      logger.info(`Cached ${voices.length} EdgeTTS voices from dahopevi API`);
     } catch (error) {
-      logger.warn("Failed to fetch voices from API during initialization, using fallback list");
+      logger.warn("Failed to fetch voices from API during initialization, will use fallback list until next API call succeeds");
+      instance.cachedVoices = instance.getFallbackVoices();
     }
     return instance;
   }

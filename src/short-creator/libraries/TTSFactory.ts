@@ -4,6 +4,15 @@ import { StreamlabsPolly } from "./StreamlabsPolly";
 import { TTSEngineEnum, Voices } from "../../types/shorts";
 import { logger } from "../../config";
 
+declare const process: {
+  env: {
+    DAHOPEVI_BASE_URL?: string;
+    DAHOPEVI_URL?: string;
+    DAHOPEVI_API_KEY?: string;
+    [key: string]: string | undefined;
+  };
+};
+
 export interface TTSService {
   generate(text: string, voice: Voices): Promise<{
     audio: ArrayBuffer;
@@ -34,6 +43,10 @@ export class TTSFactory {
         const dahopevi_url = process.env.DAHOPEVI_BASE_URL || process.env.DAHOPEVI_URL || 'https://api.dahopevi.com';
         const api_key = process.env.DAHOPEVI_API_KEY || '';
         service = await EdgeTTS.init(api_key, dahopevi_url);
+        // Force an initial voices fetch to ensure we have the most up-to-date list
+        await (service as EdgeTTS).getAvailableVoicesFromAPI().catch(err => {
+          logger.warn("Could not fetch initial voices list, will retry later:", err);
+        });
         break;
       
       case TTSEngineEnum.streamlabspolly:
