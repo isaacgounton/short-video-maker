@@ -62,7 +62,7 @@ export class EdgeTTS {
   }
 
   listAvailableVoices(): string[] {
-    // Return common Edge TTS voices
+    // Return common Edge TTS voices as fallback
     return [
       "en-US-AriaNeural",
       "en-US-JennyNeural", 
@@ -84,10 +84,13 @@ export class EdgeTTS {
 
   async getAvailableVoicesFromAPI(): Promise<string[]> {
     try {
+      const headers: Record<string, string> = {};
+      if (this.apiKey) {
+        headers["x-api-key"] = this.apiKey;
+      }
+
       const response = await axios.get(`${this.baseUrl}/v1/audio/speech/voices`, {
-        headers: {
-          "x-api-key": this.apiKey,
-        },
+        headers,
       });
       
       return response.data.voices

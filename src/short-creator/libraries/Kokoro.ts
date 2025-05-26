@@ -26,7 +26,7 @@ export class Kokoro {
       };
       
       if (this.api_key) {
-        headers['Authorization'] = `Bearer ${this.api_key}`;
+        headers['x-api-key'] = this.api_key;
       }
 
       // Call dahopevi's TTS endpoint with longer timeout for video generation
@@ -142,7 +142,7 @@ export class Kokoro {
     try {
       const headers: Record<string, string> = {};
       if (this.api_key) {
-        headers['Authorization'] = `Bearer ${this.api_key}`;
+        headers['x-api-key'] = this.api_key;
       }
 
       await axios.get(`${this.dahopevi_url}/health`, {
@@ -198,7 +198,7 @@ export class Kokoro {
     try {
       const headers: Record<string, string> = {};
       if (this.api_key) {
-        headers['Authorization'] = `Bearer ${this.api_key}`;
+        headers['x-api-key'] = this.api_key;
       }
 
       const response = await axios.get(`${this.dahopevi_url}/v1/audio/speech/voices`, {

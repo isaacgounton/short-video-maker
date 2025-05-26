@@ -31,7 +31,7 @@ export class TTSFactory {
         break;
       
       case TTSEngineEnum.edgetts:
-        const dahopevi_url = process.env.DAHOPEVI_URL || 'http://localhost:8080';
+        const dahopevi_url = process.env.DAHOPEVI_BASE_URL || process.env.DAHOPEVI_URL || 'https://api.dahopevi.com';
         const api_key = process.env.DAHOPEVI_API_KEY || '';
         service = await EdgeTTS.init(api_key, dahopevi_url);
         break;
