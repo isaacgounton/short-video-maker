@@ -15,7 +15,10 @@ export class Whisper {
   constructor(private config: Config) {}
 
   static async init(config: Config): Promise<Whisper> {
-    if (!config.runningInDocker) {
+    // Check if we're using a shared Whisper installation
+    const isSharedWhisper = process.env.SHARED_WHISPER_PATH;
+    
+    if (!config.runningInDocker && !isSharedWhisper) {
       logger.debug("Installing WhisperCpp");
       await installWhisperCpp({
         to: config.whisperInstallPath,
@@ -38,6 +41,10 @@ export class Whisper {
       });
       // todo run the jfk command to check if everything is ok
       logger.debug("Whisper model downloaded");
+    } else if (isSharedWhisper) {
+      logger.debug("Using shared Whisper installation at:", config.whisperInstallPath);
+    } else {
+      logger.debug("Running in Docker with pre-built Whisper installation");
     }
 
     return new Whisper(config);

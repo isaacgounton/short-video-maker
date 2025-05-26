@@ -57,7 +57,8 @@ export class Config {
       path.join(os.homedir(), ".ai-agents-az-video-generator");
     this.libsDirPath = path.join(this.dataDirPath, "libs");
 
-    this.whisperInstallPath = path.join(this.libsDirPath, "whisper");
+    // Check for shared whisper path first, then fall back to local installation
+    this.whisperInstallPath = process.env.SHARED_WHISPER_PATH || path.join(this.libsDirPath, "whisper");
     this.videosDirPath = path.join(this.dataDirPath, "videos");
     this.tempDirPath = path.join(this.dataDirPath, "temp");
     this.installationSuccessfulPath = path.join(
