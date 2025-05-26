@@ -56,11 +56,10 @@ COPY package.json /app/
 
 # Set required directories and permissions - create all needed directories upfront
 RUN mkdir -p /app/data/videos /app/data/temp /app/static/music && \
-    chown -R appuser:appuser /app && \
-    chmod -R 775 /app/data
+    chmod -R 777 /app/data
 
-# Switch to non-root user
-USER appuser
+# Run as root to avoid permission issues in cloud environments like Coolify
+# USER appuser
 
 # Production environment configuration
 ENV NODE_ENV=production \

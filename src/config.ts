@@ -66,13 +66,18 @@ export class Config {
       "installation-successful",
     );
 
-    fs.ensureDirSync(this.dataDirPath);
-    // Only create libs directory if not using shared Whisper
-    if (!process.env.SHARED_WHISPER_PATH) {
-      fs.ensureDirSync(this.libsDirPath);
+    try {
+      fs.ensureDirSync(this.dataDirPath);
+      // Only create libs directory if not using shared Whisper
+      if (!process.env.SHARED_WHISPER_PATH) {
+        fs.ensureDirSync(this.libsDirPath);
+      }
+      fs.ensureDirSync(this.videosDirPath);
+      fs.ensureDirSync(this.tempDirPath);
+    } catch (error) {
+      // Log the error but don't crash - directories might already exist or be created by orchestrator
+      console.warn(`Warning: Could not create directories. This is normal in cloud environments like Coolify. Error: ${error.message}`);
     }
-    fs.ensureDirSync(this.videosDirPath);
-    fs.ensureDirSync(this.tempDirPath);
 
     this.packageDirPath = path.join(__dirname, "..");
     this.staticDirPath = path.join(this.packageDirPath, "static");
