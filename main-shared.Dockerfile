@@ -46,9 +46,7 @@ RUN pnpm build
 
 FROM base AS prod
 # Create app user
-RUN useradd -r -s /bin/false -d /app appuser && \
-    mkdir -p /app/data && \
-    chown -R appuser:appuser /app
+RUN useradd -r -s /bin/false -d /app appuser
 
 # Copy application files
 COPY static /app/static
@@ -56,10 +54,10 @@ COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
 COPY package.json /app/
 
-# Set required directories and permissions
-RUN mkdir -p /app/data/videos /app/data/temp && \
+# Set required directories and permissions - create all needed directories upfront
+RUN mkdir -p /app/data/videos /app/data/temp /app/static/music && \
     chown -R appuser:appuser /app && \
-    chmod -R 755 /app/data
+    chmod -R 775 /app/data
 
 # Switch to non-root user
 USER appuser
@@ -72,9 +70,6 @@ ENV NODE_ENV=production \
     CONCURRENCY=2 \
     VIDEO_CACHE_SIZE_IN_BYTES=2097152000 \
     SHARED_WHISPER_PATH=/shared/whisper
-
-# Create music files directory
-RUN mkdir -p /app/static/music
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
