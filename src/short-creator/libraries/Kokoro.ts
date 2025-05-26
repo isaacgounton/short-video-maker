@@ -6,6 +6,9 @@ import {
 } from "../../types/shorts";
 import { logger } from "../../config";
 
+// Use Node.js global types (Buffer and process are available globally in Node.js)
+// @types/node provides the proper typing for these globals
+
 export class Kokoro {
   private cachedVoices: string[] | null = null; // Cache for API voices
   
@@ -44,7 +47,7 @@ export class Kokoro {
         throw new Error(`TTS request failed with status ${response.status}`);
       }
 
-      const { audio_url, duration } = response.data;
+      const { audio_url, duration } = response.data.response || response.data;
       
       // Download the audio file with extended timeout
       const audioResponse = await axios.get(audio_url, {
@@ -207,9 +210,10 @@ export class Kokoro {
       });
 
       // Filter for kokoro voices and cache them
-      const kokoroVoices = response.data.voices
-        .filter((voice: { engine: string }) => voice.engine === "kokoro")
-        .map((voice: { name: string }) => voice.name) || [];
+      const voices = response.data?.response?.voices || [];
+      const kokoroVoices = voices
+        .filter((voice: { engine?: string }) => voice?.engine === "kokoro")
+        .map((voice: { name?: string }) => voice?.name).filter(Boolean);
       
       // Cache the voices for future use
       this.cachedVoices = kokoroVoices;

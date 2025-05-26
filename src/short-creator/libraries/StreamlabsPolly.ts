@@ -25,7 +25,7 @@ export class StreamlabsPolly {
       };
       
       if (this.api_key) {
-        headers['Authorization'] = `Bearer ${this.api_key}`;
+        headers['x-api-key'] = this.api_key;
       }
 
       // Call dahopevi's TTS endpoint
@@ -43,7 +43,7 @@ export class StreamlabsPolly {
         throw new Error(`TTS request failed with status ${response.status}`);
       }
 
-      const { audio_url } = response.data;
+      const { audio_url } = response.data.response || response.data;
       
       // Download the audio file
       const audioResponse = await axios.get(audio_url, {
@@ -122,7 +122,7 @@ export class StreamlabsPolly {
     try {
       const headers: Record<string, string> = {};
       if (this.api_key) {
-        headers['Authorization'] = `Bearer ${this.api_key}`;
+        headers['x-api-key'] = this.api_key;
       }
 
       await axios.get(`${this.dahopevi_url}/health`, {
@@ -160,7 +160,7 @@ export class StreamlabsPolly {
     try {
       const headers: Record<string, string> = {};
       if (this.api_key) {
-        headers['Authorization'] = `Bearer ${this.api_key}`;
+        headers['x-api-key'] = this.api_key;
       }
 
       const response = await axios.get(`${this.dahopevi_url}/v1/audio/speech/voices`, {
@@ -169,9 +169,10 @@ export class StreamlabsPolly {
       });
 
       // Filter for streamlabs-polly voices
-      return response.data.voices
-        .filter((voice: { engine: string }) => voice.engine === "streamlabs-polly")
-        .map((voice: { name: string }) => voice.name) || [];
+      const voices = response.data?.response?.voices || [];
+      return voices
+        .filter((voice: { engine?: string }) => voice?.engine === "streamlabs-polly")
+        .map((voice: { name?: string }) => voice?.name).filter(Boolean);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.warn({ error: errorMessage }, "Could not fetch streamlabs-polly voices from dahopevi");

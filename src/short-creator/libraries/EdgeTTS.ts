@@ -100,9 +100,15 @@ export class EdgeTTS {
         headers,
       });
       
-      return response.data.voices
-        .filter((voice: { engine: string }) => voice.engine === "edge-tts")
-        .map((voice: { name: any }) => voice.name);
+      const voices = response.data?.response?.voices || [];
+      const edgeVoices = voices.filter((voice: { engine?: string }) => voice?.engine === "edge-tts");
+      
+      if (!edgeVoices.length) {
+        logger.warn("No edge-tts voices found in API response");
+        return this.getFallbackVoices();
+      }
+      
+      return edgeVoices.map((voice: { name?: string }) => voice?.name).filter(Boolean);
     } catch (error) {
       logger.error("Error fetching voices from Dahopevi:", error);
       return this.listAvailableVoices(); // fallback to static list
