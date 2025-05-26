@@ -74,10 +74,27 @@ export class DahopeviWhisper implements IWhisper {
       // The response should be the ASS content or a URL to download it
       let assContent = response.data;
       
+      // Handle different response formats from dahopevi API
+      if (typeof assContent === 'object' && assContent !== null) {
+        // If response is an object, look for common fields
+        if (assContent.response) {
+          assContent = assContent.response;
+        } else if (assContent.result) {
+          assContent = assContent.result;
+        } else if (assContent.data) {
+          assContent = assContent.data;
+        }
+      }
+      
       // If it's a URL, download the content
       if (typeof assContent === 'string' && assContent.startsWith('http')) {
         const downloadResponse = await axios.get(assContent);
         assContent = downloadResponse.data;
+      }
+      
+      // Ensure we have a string for parsing
+      if (typeof assContent !== 'string') {
+        throw new Error(`Expected string response but got ${typeof assContent}: ${JSON.stringify(assContent)}`);
       }
 
       return assContent;
