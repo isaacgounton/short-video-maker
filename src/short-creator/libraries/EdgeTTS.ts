@@ -82,7 +82,7 @@ export class EdgeTTS {
     ];
   }
 
-  async getAvailableVoicesFromAPI(): Promise<Voices[]> {
+  async getAvailableVoicesFromAPI(): Promise<string[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/v1/audio/speech/voices`, {
         headers: {
