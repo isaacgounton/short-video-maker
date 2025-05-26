@@ -4,14 +4,16 @@ import {
   transcribe,
 } from "@remotion/install-whisper-cpp";
 import path from "path";
+import fs from "fs";
 
 import { Config } from "../../config";
 import type { Caption } from "../../types/shorts";
+import { IWhisper } from "./IWhisper";
 import { logger } from "../../logger";
 
 export const ErrorWhisper = new Error("There was an error with WhisperCpp");
 
-export class Whisper {
+export class Whisper implements IWhisper {
   constructor(private config: Config) {}
 
   static async init(config: Config): Promise<Whisper> {
@@ -42,7 +44,22 @@ export class Whisper {
       // todo run the jfk command to check if everything is ok
       logger.debug("Whisper model downloaded");
     } else if (isSharedWhisper) {
-      logger.debug("Using shared Whisper installation at:", config.whisperInstallPath);
+      logger.info("Using shared Whisper installation at:", config.whisperInstallPath);
+      logger.info("Expected model folder:", path.join(config.whisperInstallPath, "models"));
+      logger.info("Looking for model:", config.whisperModel);
+      
+      // Check if model directory and files exist
+      const modelFolder = path.join(config.whisperInstallPath, "models");
+      try {
+        if (fs.existsSync(modelFolder)) {
+          const files = fs.readdirSync(modelFolder);
+          logger.info("Available model files:", files);
+        } else {
+          logger.error("Model folder does not exist:", modelFolder);
+        }
+      } catch (error) {
+        logger.error("Error checking model folder:", error);
+      }
     } else {
       logger.debug("Running in Docker with pre-built Whisper installation");
     }

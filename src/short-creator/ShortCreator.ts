@@ -9,7 +9,7 @@ import http from "http";
 import { Kokoro } from "./libraries/Kokoro";
 import { TTSFactory, TTSService } from "./libraries/TTSFactory";
 import { Remotion } from "./libraries/Remotion";
-import { Whisper } from "./libraries/Whisper";
+import { IWhisper } from "./libraries/IWhisper";
 import { FFMpeg } from "./libraries/FFmpeg";
 import { PexelsAPI } from "./libraries/Pexels";
 import { Config } from "../config";
@@ -36,7 +36,7 @@ export class ShortCreator {
     private config: Config,
     private remotion: Remotion,
     private kokoro: Kokoro,
-    private whisper: Whisper,
+    private whisper: IWhisper,
     private ffmpeg: FFMpeg,
     private pexelsApi: PexelsAPI,
     private musicManager: MusicManager,

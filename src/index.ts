@@ -5,6 +5,7 @@ import fs from "fs-extra";
 import { Kokoro } from "./short-creator/libraries/Kokoro";
 import { Remotion } from "./short-creator/libraries/Remotion";
 import { Whisper } from "./short-creator/libraries/Whisper";
+import { DahopeviWhisper } from "./short-creator/libraries/DahopeviWhisper";
 import { FFMpeg } from "./short-creator/libraries/FFmpeg";
 import { PexelsAPI } from "./short-creator/libraries/Pexels";
 import { Config } from "./config";
@@ -36,7 +37,11 @@ async function main() {
   logger.debug("initializing kokoro");
   const kokoro = await Kokoro.init(config.kokoroModelPrecision);
   logger.debug("initializing whisper");
-  const whisper = await Whisper.init(config);
+  // Use DahopeviWhisper if we have DAHOPEVI_BASE_URL set (external or local API)
+  // Use local Whisper only if no dahopevi API is configured
+  const whisper = process.env.DAHOPEVI_BASE_URL 
+    ? await DahopeviWhisper.init(config)
+    : await Whisper.init(config);
   logger.debug("initializing ffmpeg");
   const ffmpeg = await FFMpeg.init();
   const pexelsApi = new PexelsAPI(config.pexelsApiKey);
