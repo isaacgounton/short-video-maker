@@ -76,7 +76,7 @@ export class Config {
       fs.ensureDirSync(this.tempDirPath);
     } catch (error) {
       // Log the error but don't crash - directories might already exist or be created by orchestrator
-      console.warn(`Warning: Could not create directories. This is normal in cloud environments like Coolify. Error: ${error.message}`);
+      console.warn(`Warning: Could not create directories. This is normal in cloud environments like Coolify. Error: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     this.packageDirPath = path.join(__dirname, "..");
