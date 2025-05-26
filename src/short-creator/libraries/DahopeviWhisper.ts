@@ -17,7 +17,8 @@ export class DahopeviWhisper implements IWhisper {
     // For Whisper, always use local dahopevi container since external API can't access container files
     // TTS can continue using external API since it doesn't need file uploads
     this.baseUrl = "http://dahopevi:8080";
-    this.apiKey = process.env.DAHOPEVI_API_KEY || "";
+    // Use API_KEY for local dahopevi container (matches config.py)
+    this.apiKey = process.env.API_KEY || process.env.DAHOPEVI_API_KEY || "";
   }
 
   static async init(config: Config): Promise<DahopeviWhisper> {
@@ -59,8 +60,8 @@ export class DahopeviWhisper implements IWhisper {
         },
         {
           headers: {
-            "Content-Type": "application/json"
-            // Local dahopevi container doesn't require authentication
+            "Content-Type": "application/json",
+            ...(this.apiKey && { "x-api-key": this.apiKey })
           },
           timeout: 300000 // 5 minutes timeout
         }
