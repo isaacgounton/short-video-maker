@@ -99,6 +99,52 @@ export class APIRouter {
       res.status(200).json(this.shortCreator.ListAvailableVoices());
     });
 
+    // TTS-related endpoints
+    this.router.get("/tts-engines", async (req: ExpressRequest, res: ExpressResponse) => {
+      try {
+        const engines = await this.shortCreator.ListAvailableTTSEngines();
+        res.status(200).json({ engines });
+      } catch (error: unknown) {
+        logger.error(error, "Error getting TTS engines");
+        res.status(500).json({
+          error: "Failed to get TTS engines",
+          message: error instanceof Error ? error.message : "Unknown error"
+        });
+      }
+    });
+
+    this.router.get("/tts-voices", async (req: ExpressRequest, res: ExpressResponse) => {
+      try {
+        const allVoices = await this.shortCreator.ListAllAvailableVoices();
+        res.status(200).json({ voices: allVoices });
+      } catch (error: unknown) {
+        logger.error(error, "Error getting all TTS voices");
+        res.status(500).json({
+          error: "Failed to get TTS voices",
+          message: error instanceof Error ? error.message : "Unknown error"
+        });
+      }
+    });
+
+    this.router.get("/tts-voices/:engine", async (req: ExpressRequest, res: ExpressResponse) => {
+      try {
+        const { engine } = req.params;
+        if (!engine) {
+          res.status(400).json({ error: "TTS engine is required" });
+          return;
+        }
+        
+        const voices = await this.shortCreator.ListAvailableVoicesForEngine(engine as any);
+        res.status(200).json({ voices });
+      } catch (error: unknown) {
+        logger.error(error, "Error getting TTS voices for engine");
+        res.status(500).json({
+          error: "Failed to get TTS voices for engine",
+          message: error instanceof Error ? error.message : "Unknown error"
+        });
+      }
+    });
+
     this.router.get(
       "/short-videos",
       (req: ExpressRequest, res: ExpressResponse) => {

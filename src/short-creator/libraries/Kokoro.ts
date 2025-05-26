@@ -27,7 +27,7 @@ export class Kokoro {
         headers['Authorization'] = `Bearer ${this.api_key}`;
       }
 
-      // Call dahopevi's TTS endpoint
+      // Call dahopevi's TTS endpoint with longer timeout for video generation
       const response = await axios.post(`${this.dahopevi_url}/v1/audio/speech`, {
         tts: "kokoro",
         text: text,
@@ -35,28 +35,34 @@ export class Kokoro {
         output_format: "wav"
       }, {
         headers,
-        timeout: 60000, // 60 second timeout
+        timeout: 120000, // 2 minute timeout for initial request
       });
 
       if (response.status !== 200) {
         throw new Error(`TTS request failed with status ${response.status}`);
       }
 
-      const { audio_url } = response.data;
+      const { audio_url, duration } = response.data;
       
-      // Download the audio file
+      // Download the audio file with extended timeout
       const audioResponse = await axios.get(audio_url, {
         responseType: 'arraybuffer',
-        timeout: 30000
+        timeout: 60000, // 1 minute timeout for download
       });
 
       const audioBuffer = audioResponse.data;
       
-      // Estimate audio length (rough calculation for WAV files)
-      // WAV header is 44 bytes, then raw audio data
-      // Assuming 16-bit, 22050 Hz mono (typical for TTS)
-      const dataSize = audioBuffer.byteLength - 44;
-      const audioLength = dataSize / (2 * 22050); // 2 bytes per sample, 22050 samples per second
+      // Use duration from API response if available, otherwise estimate
+      let audioLength: number;
+      if (duration && typeof duration === 'number') {
+        audioLength = duration;
+      } else {
+        // Fallback: estimate audio length (rough calculation for WAV files)
+        // WAV header is 44 bytes, then raw audio data
+        // Assuming 16-bit, 22050 Hz mono (typical for TTS)
+        const dataSize = audioBuffer.byteLength - 44;
+        audioLength = dataSize / (2 * 22050); // 2 bytes per sample, 22050 samples per second
+      }
       
       logger.debug({ text, voice, audioLength, audioSize: audioBuffer.byteLength }, "Audio generated via dahopevi");
 

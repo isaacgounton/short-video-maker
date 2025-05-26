@@ -28,6 +28,7 @@ import {
   VoiceEnum,
   OrientationEnum,
   MusicVolumeEnum,
+  TTSEngineEnum,
 } from "../../types/shorts";
 
 interface SceneFormData {
@@ -48,24 +49,28 @@ const VideoCreator: React.FC = () => {
     voice: VoiceEnum.af_heart,
     orientation: OrientationEnum.portrait,
     musicVolume: MusicVolumeEnum.high,
+    ttsEngine: TTSEngineEnum.kokoro,
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voices, setVoices] = useState<VoiceEnum[]>([]);
   const [musicTags, setMusicTags] = useState<MusicMoodEnum[]>([]);
+  const [ttsEngines, setTtsEngines] = useState<TTSEngineEnum[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
 
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [voicesResponse, musicResponse] = await Promise.all([
+        const [voicesResponse, musicResponse, ttsEnginesResponse] = await Promise.all([
           axios.get("/api/voices"),
           axios.get("/api/music-tags"),
+          axios.get("/api/tts-engines"),
         ]);
 
         setVoices(voicesResponse.data);
         setMusicTags(musicResponse.data);
+        setTtsEngines(ttsEnginesResponse.data.engines);
       } catch (err) {
         console.error("Failed to fetch options:", err);
         setError(
@@ -301,6 +306,26 @@ const VideoCreator: React.FC = () => {
                 helperText="Any valid CSS color (name, hex, rgba)"
                 required
               />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>TTS Engine</InputLabel>
+                <Select
+                  value={config.ttsEngine}
+                  onChange={(e) => handleConfigChange("ttsEngine", e.target.value)}
+                  label="TTS Engine"
+                  required
+                >
+                  {ttsEngines.map((engine) => (
+                    <MenuItem key={engine} value={engine}>
+                      {engine === TTSEngineEnum.kokoro && "Kokoro (AI Voice)"}
+                      {engine === TTSEngineEnum.edgetts && "Edge TTS (Microsoft)"}
+                      {engine === TTSEngineEnum.streamlabspolly && "AWS Polly (Streamlabs)"}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
 
             <Grid item xs={12} sm={6}>

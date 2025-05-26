@@ -2,14 +2,14 @@ import axios from "axios";
 import { Voices } from "../../types/shorts";
 import { logger } from "../../config";
 
-interface DahopeviResponse {
+interface EdgeTTSResponse {
   response: {
     audio_url: string;
     subtitle_url: string;
   };
 }
 
-export class DahopeviTTS {
+export class EdgeTTS {
   constructor(private apiKey: string, private baseUrl: string) {}
 
   async generate(
@@ -20,7 +20,7 @@ export class DahopeviTTS {
     audioLength: number;
   }> {
     try {
-      const response = await axios.post<DahopeviResponse>(
+      const response = await axios.post<EdgeTTSResponse>(
         `${this.baseUrl}/v1/audio/speech`,
         {
           text,
@@ -61,7 +61,12 @@ export class DahopeviTTS {
     }
   }
 
-  async listAvailableVoices(): Promise<Voices[]> {
+  listAvailableVoices(): Voices[] {
+    // Return some common edge-tts voices - this should be updated to fetch from API dynamically
+    return ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo"] as Voices[];
+  }
+
+  async getAvailableVoicesFromAPI(): Promise<Voices[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/v1/audio/speech/voices`, {
         headers: {
@@ -74,11 +79,11 @@ export class DahopeviTTS {
         .map((voice: { name: any }) => voice.name);
     } catch (error) {
       logger.error("Error fetching voices from Dahopevi:", error);
-      throw error;
+      return this.listAvailableVoices(); // fallback to static list
     }
   }
 
-  static async init(apiKey: string, baseUrl: string): Promise<DahopeviTTS> {
-    return new DahopeviTTS(apiKey, baseUrl);
+  static async init(apiKey: string, baseUrl: string): Promise<EdgeTTS> {
+    return new EdgeTTS(apiKey, baseUrl);
   }
 }

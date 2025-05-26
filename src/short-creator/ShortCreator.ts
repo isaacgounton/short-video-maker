@@ -7,6 +7,7 @@ import https from "https";
 import http from "http";
 
 import { Kokoro } from "./libraries/Kokoro";
+import { TTSFactory, TTSService } from "./libraries/TTSFactory";
 import { Remotion } from "./libraries/Remotion";
 import { Whisper } from "./libraries/Whisper";
 import { FFMpeg } from "./libraries/FFmpeg";
@@ -23,6 +24,7 @@ import type {
   MusicTag,
   MusicForVideo,
 } from "../types/shorts";
+import { TTSEngineEnum } from "../types/shorts";
 
 export class ShortCreator {
   private queue: {
@@ -106,9 +108,13 @@ export class ShortCreator {
     const orientation: OrientationEnum =
       config.orientation || OrientationEnum.portrait;
 
+    // Get the TTS service based on the selected engine
+    const ttsEngine = config.ttsEngine || TTSEngineEnum.kokoro;
+    const ttsService = await TTSFactory.getTTSService(ttsEngine);
+    
     let index = 0;
     for (const scene of inputScenes) {
-      const audio = await this.kokoro.generate(
+      const audio = await ttsService.generate(
         scene.text,
         config.voice ?? "af_heart",
       );
@@ -293,5 +299,29 @@ export class ShortCreator {
 
   public ListAvailableVoices(): string[] {
     return this.kokoro.listAvailableVoices();
+  }
+
+  public async ListAvailableTTSEngines(): Promise<TTSEngineEnum[]> {
+    return Object.values(TTSEngineEnum);
+  }
+
+  public async ListAvailableVoicesForEngine(engine: TTSEngineEnum): Promise<string[]> {
+    try {
+      const ttsService = await TTSFactory.getTTSService(engine);
+      return ttsService.listAvailableVoices();
+    } catch (error) {
+      logger.error({ engine, error }, "Failed to get voices for TTS engine");
+      return [];
+    }
+  }
+
+  public async ListAllAvailableVoices(): Promise<Record<string, string[]>> {
+    try {
+      const allVoices = await TTSFactory.getAllAvailableVoices();
+      return allVoices as Record<string, string[]>;
+    } catch (error) {
+      logger.error({ error }, "Failed to get all available voices");
+      return {};
+    }
   }
 }
