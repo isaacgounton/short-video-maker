@@ -57,8 +57,9 @@ COPY --from=build /app/dist /app/dist
 COPY package.json /app/
 
 # Set required directories and permissions
-RUN mkdir -p /app/data/videos /app/data/temp /app/data/libs && \
-    chown -R appuser:appuser /app
+RUN mkdir -p /app/data/videos /app/data/temp && \
+    chown -R appuser:appuser /app && \
+    chmod -R 755 /app/data
 
 # Switch to non-root user
 USER appuser

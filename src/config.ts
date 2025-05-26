@@ -67,7 +67,10 @@ export class Config {
     );
 
     fs.ensureDirSync(this.dataDirPath);
-    fs.ensureDirSync(this.libsDirPath);
+    // Only create libs directory if not using shared Whisper
+    if (!process.env.SHARED_WHISPER_PATH) {
+      fs.ensureDirSync(this.libsDirPath);
+    }
     fs.ensureDirSync(this.videosDirPath);
     fs.ensureDirSync(this.tempDirPath);
 
