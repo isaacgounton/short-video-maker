@@ -6,11 +6,12 @@ import path from "path";
 import https from "https";
 import http from "http";
 
-import { Kokoro } from "./libraries/Kokoro";
+import { DahopeviTTS } from "./libraries/DahopeviTTS";
 import { Remotion } from "./libraries/Remotion";
 import { Whisper } from "./libraries/Whisper";
 import { FFMpeg } from "./libraries/FFmpeg";
 import { PexelsAPI } from "./libraries/Pexels";
+import { PixabayAPI } from "./libraries/Pixabay";
 import { Config } from "../config";
 import { logger } from "../logger";
 import { MusicManager } from "./music";
@@ -33,10 +34,11 @@ export class ShortCreator {
   constructor(
     private config: Config,
     private remotion: Remotion,
-    private kokoro: Kokoro,
+    private tts: DahopeviTTS,
     private whisper: Whisper,
     private ffmpeg: FFMpeg,
     private pexelsApi: PexelsAPI,
+    private pixabayApi: PixabayAPI,
     private musicManager: MusicManager,
   ) {}
 
@@ -108,9 +110,10 @@ export class ShortCreator {
 
     let index = 0;
     for (const scene of inputScenes) {
-      const audio = await this.kokoro.generate(
+      // Generate audio using dahopevi TTS
+      const audio = await this.tts.generate(
         scene.text,
-        config.voice ?? "af_heart",
+        config.voice ?? "en-US-AvaNeural",
       );
       let { audioLength } = audio;
       const { audio: audioStream } = audio;
@@ -137,12 +140,29 @@ export class ShortCreator {
       const captions = await this.whisper.CreateCaption(tempWavPath);
 
       await this.ffmpeg.saveToMp3(audioStream, tempMp3Path);
-      const video = await this.pexelsApi.findVideo(
-        scene.searchTerms,
-        audioLength,
-        excludeVideoIds,
-        orientation,
-      );
+      // Try to find video from Pexels first, fallback to Pixabay
+      let video;
+      try {
+        video = await this.pexelsApi.findVideo(
+          scene.searchTerms,
+          audioLength,
+          excludeVideoIds,
+          orientation,
+        );
+      } catch (error) {
+        logger.info("Pexels video not found, trying Pixabay");
+        try {
+          video = await this.pixabayApi.findVideo(
+            scene.searchTerms,
+            audioLength,
+            excludeVideoIds,
+            orientation,
+          );
+        } catch (pixabayError) {
+          logger.error("Video not found in both Pexels and Pixabay");
+          throw new Error("No suitable video found in any provider");
+        }
+      }
 
       logger.debug(`Downloading video from ${video.url} to ${tempVideoPath}`);
 
@@ -291,7 +311,7 @@ export class ShortCreator {
     return videos;
   }
 
-  public ListAvailableVoices(): string[] {
-    return this.kokoro.listAvailableVoices();
+  public ListAvailableVoices(): Promise<string[]> {
+    return this.tts.listAvailableVoices();
   }
 }

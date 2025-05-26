@@ -38,6 +38,7 @@ export class Config {
   public packageDirPath: string;
   public musicDirPath: string;
   public pexelsApiKey: string;
+  public pixabayApiKey: string;
   public logLevel: pino.Level;
   public whisperVerbose: boolean;
   public port: number;
@@ -46,6 +47,8 @@ export class Config {
   public whisperVersion: string = whisperVersion;
   public whisperModel: whisperModels = defaultWhisperModel;
   public kokoroModelPrecision: kokoroModelPrecision = "fp32";
+  public dahopeviApiKey: string;
+  public dahopeviBaseUrl: string;
 
   // docker-specific, performance-related settings to prevent memory issues
   public concurrency?: number;
@@ -75,6 +78,7 @@ export class Config {
     this.musicDirPath = path.join(this.staticDirPath, "music");
 
     this.pexelsApiKey = process.env.PEXELS_API_KEY as string;
+    this.pixabayApiKey = process.env.PIXABAY_API_KEY as string;
     this.logLevel = (process.env.LOG_LEVEL || defaultLogLevel) as pino.Level;
     this.whisperVerbose = process.env.WHISPER_VERBOSE === "true";
     this.port = process.env.PORT ? parseInt(process.env.PORT) : defaultPort;
@@ -89,6 +93,9 @@ export class Config {
         .KOKORO_MODEL_PRECISION as kokoroModelPrecision;
     }
 
+    this.dahopeviApiKey = process.env.DAHOPEVI_API_KEY || '';
+    this.dahopeviBaseUrl = process.env.DAHOPEVI_BASE_URL || 'http://api:8080';
+
     this.concurrency = process.env.CONCURRENCY
       ? parseInt(process.env.CONCURRENCY)
       : undefined;
@@ -101,9 +108,14 @@ export class Config {
   }
 
   public ensureConfig() {
-    if (!this.pexelsApiKey) {
+    if (!this.pexelsApiKey && !this.pixabayApiKey) {
       throw new Error(
-        "PEXELS_API_KEY environment variable is missing. Get your free API key: https://www.pexels.com/api/key/ - see how to run the project: https://github.com/gyoridavid/short-video-maker",
+        "Either PEXELS_API_KEY or PIXABAY_API_KEY environment variable must be set. Get your free API key from: https://www.pexels.com/api/key/ or https://pixabay.com/api/docs/",
+      );
+    }
+    if (!this.dahopeviApiKey) {
+      throw new Error(
+        "DAHOPEVI_API_KEY environment variable is missing.",
       );
     }
   }
