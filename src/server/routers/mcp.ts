@@ -69,6 +69,144 @@ export class MCPRouter {
         };
       },
     );
+
+    this.mcpServer.tool(
+      "list-available-voices",
+      "List all available TTS voices for all engines",
+      {},
+      async () => {
+        const allVoices = await this.shortCreator.ListAllAvailableVoices();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(allVoices, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "list-voices-for-engine",
+      "List available voices for a specific TTS engine",
+      {
+        engine: z.enum(["kokoro", "edge-tts", "streamlabs-polly"]).describe("TTS engine name"),
+      },
+      async ({ engine }) => {
+        const voices = await this.shortCreator.ListAvailableVoicesForEngine(engine as any);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ engine, voices }, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "list-tts-engines",
+      "List all available TTS engines",
+      {},
+      async () => {
+        const engines = await this.shortCreator.ListAvailableTTSEngines();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ engines }, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "list-all-videos",
+      "List all videos in the system with their status",
+      {},
+      async () => {
+        const videos = this.shortCreator.listAllVideos();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ videos }, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "list-music-tags",
+      "List all available music mood tags",
+      {},
+      async () => {
+        const musicTags = this.shortCreator.ListAvailableMusicTags();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ musicTags }, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "get-queue-status",
+      "Get the current status of the video processing queue (admin tool)",
+      {},
+      async () => {
+        const queueStatus = this.shortCreator.getQueueStatus();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(queueStatus, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "clear-stuck-videos",
+      "Remove videos that have been stuck in the queue for more than 30 minutes (admin tool)",
+      {},
+      async () => {
+        const result = this.shortCreator.clearStuckVideos();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "restart-queue",
+      "Force restart the video processing queue (admin tool)",
+      {},
+      async () => {
+        this.shortCreator.forceRestartQueue();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ message: "Queue processing restarted successfully" }, null, 2),
+            },
+          ],
+        };
+      },
+    );
   }
 
   private setupRoutes() {
