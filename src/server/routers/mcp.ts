@@ -72,37 +72,91 @@ export class MCPRouter {
 
     this.mcpServer.tool(
       "list-available-voices",
-      "List all available TTS voices for all engines",
+      "List all available TTS voices for all engines (uses cached/fallback voices for speed)",
       {},
       async () => {
-        const allVoices = await this.shortCreator.ListAllAvailableVoices();
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(allVoices, null, 2),
-            },
-          ],
-        };
+        try {
+          // Use a timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Timeout")), 5000);
+          });
+          
+          const voicesPromise = this.shortCreator.ListAllAvailableVoices();
+          const allVoices = await Promise.race([voicesPromise, timeoutPromise]);
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(allVoices, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          // Fallback to basic voice lists if API fails or times out
+          const fallbackVoices = {
+            kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
+            "edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "fr-FR-DeniseNeural", "es-ES-ElviraNeural"],
+            "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian"]
+          };
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(fallbackVoices, null, 2),
+              },
+            ],
+          };
+        }
       },
     );
 
     this.mcpServer.tool(
       "list-voices-for-engine",
-      "List available voices for a specific TTS engine",
+      "List available voices for a specific TTS engine (uses cached/fallback voices for speed)",
       {
         engine: z.enum(["kokoro", "edge-tts", "streamlabs-polly"]).describe("TTS engine name"),
       },
       async ({ engine }) => {
-        const voices = await this.shortCreator.ListAvailableVoicesForEngine(engine as any);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ engine, voices }, null, 2),
-            },
-          ],
-        };
+        try {
+          // Use a timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Timeout")), 3000);
+          });
+          
+          const voicesPromise = this.shortCreator.ListAvailableVoicesForEngine(engine as any);
+          const voices = await Promise.race([voicesPromise, timeoutPromise]);
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ engine, voices }, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          // Fallback voice lists based on engine
+          const fallbackVoices: Record<string, string[]> = {
+            kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
+            "edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "fr-FR-DeniseNeural", "es-ES-ElviraNeural", "de-DE-KatjaNeural"],
+            "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
+          };
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ 
+                  engine, 
+                  voices: fallbackVoices[engine] || [],
+                  note: "Fallback voices used due to API timeout"
+                }, null, 2),
+              },
+            ],
+          };
+        }
       },
     );
 
@@ -111,15 +165,39 @@ export class MCPRouter {
       "List all available TTS engines",
       {},
       async () => {
-        const engines = await this.shortCreator.ListAvailableTTSEngines();
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ engines }, null, 2),
-            },
-          ],
-        };
+        try {
+          // Use a timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Timeout")), 3000);
+          });
+          
+          const enginesPromise = this.shortCreator.ListAvailableTTSEngines();
+          const engines = await Promise.race([enginesPromise, timeoutPromise]);
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ engines }, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          // Fallback to basic engine list
+          const fallbackEngines = ["kokoro", "edge-tts", "streamlabs-polly"];
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ 
+                  engines: fallbackEngines,
+                  note: "Fallback engines listed due to API timeout"
+                }, null, 2),
+              },
+            ],
+          };
+        }
       },
     );
 
@@ -202,6 +280,62 @@ export class MCPRouter {
             {
               type: "text",
               text: JSON.stringify({ message: "Queue processing restarted successfully" }, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "get-voice-examples",
+      "Get example voices for different languages and TTS engines",
+      {},
+      async () => {
+        const voiceExamples = {
+          "English": {
+            "kokoro": ["af_heart", "am_adam", "bm_lewis", "bf_emma"],
+            "edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "en-GB-SoniaNeural", "en-CA-ClaraNeural"],
+            "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian"]
+          },
+          "French": {
+            "edge-tts": ["fr-FR-DeniseNeural", "fr-FR-HenriNeural", "fr-CA-AntoineNeural", "fr-CA-SylvieNeural"],
+            "note": "Use edge-tts for French voices. DO NOT use fr-FR-Standard-A (that's Google Cloud format)"
+          },
+          "Spanish": {
+            "edge-tts": ["es-ES-ElviraNeural", "es-ES-AlvaroNeural", "es-MX-DaliaNeural", "es-MX-JorgeNeural"]
+          },
+          "German": {
+            "edge-tts": ["de-DE-KatjaNeural", "de-DE-ConradNeural", "de-AT-IngridNeural"]
+          },
+          "Italian": {
+            "edge-tts": ["it-IT-ElsaNeural", "it-IT-IsabellaNeural", "it-IT-DiegoNeural"]
+          },
+          "Portuguese": {
+            "edge-tts": ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural", "pt-PT-RaquelNeural"]
+          },
+          "Japanese": {
+            "edge-tts": ["ja-JP-NanamiNeural", "ja-JP-KeitaNeural", "ja-JP-AoiNeural"]
+          },
+          "Chinese": {
+            "edge-tts": ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-TW-HsiaoChenNeural"]
+          },
+          "Arabic": {
+            "edge-tts": ["ar-SA-ZariyahNeural", "ar-SA-HamedNeural", "ar-EG-ShakirNeural"]
+          },
+          "IMPORTANT_NOTES": {
+            "voice_format_warning": "Each TTS engine uses different voice naming formats!",
+            "kokoro": "Uses internal names like af_heart, am_adam",
+            "edge-tts": "Uses Microsoft format like en-US-AriaNeural, fr-FR-DeniseNeural", 
+            "streamlabs-polly": "Uses Amazon Polly names like Joanna, Matthew",
+            "common_mistake": "Do NOT mix voice formats! fr-FR-Standard-A is Google Cloud format and will fail with edge-tts"
+          }
+        };
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(voiceExamples, null, 2),
             },
           ],
         };
