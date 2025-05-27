@@ -103,8 +103,8 @@ export class MCPRouter {
         return {
           content: [
             {
-              type: "json",
-              json: { tools }
+              type: "text",
+              text: JSON.stringify({ tools }, null, 2)
             },
           ],
         };
@@ -122,8 +122,8 @@ export class MCPRouter {
         return {
           content: [
             {
-              type: "json",
-              json: { status }
+              type: "text",
+              text: JSON.stringify({ status }, null, 2)
             },
           ],
         };
@@ -143,8 +143,8 @@ export class MCPRouter {
         return {
           content: [
             {
-              type: "json",
-              json: { videoId }
+              type: "text",
+              text: JSON.stringify({ videoId }, null, 2)
             },
           ],
         };
@@ -185,8 +185,8 @@ export class MCPRouter {
           return {
             content: [
               {
-                type: "json",
-                json: voices
+              type: "text",
+              text: JSON.stringify(voices, null, 2)
               },
             ],
           };
@@ -201,8 +201,8 @@ export class MCPRouter {
           return {
             content: [
               {
-              type: "json",
-              json: fallbackVoices
+              type: "text",
+              text: JSON.stringify(fallbackVoices, null, 2)
               },
             ],
           };
@@ -229,8 +229,8 @@ export class MCPRouter {
           return {
             content: [
               {
-                type: "json",
-                json: { engine, voices }
+              type: "text",
+              text: JSON.stringify({ engine, voices }, null, 2)
               },
             ],
           };
@@ -245,12 +245,12 @@ export class MCPRouter {
           return {
             content: [
               {
-                type: "json",
-                json: { 
+                type: "text",
+                text: JSON.stringify({ 
                   engine, 
                   voices: fallbackVoices[engine] || [],
                   note: "Fallback voices used due to API timeout"
-                }
+                }, null, 2)
               },
             ],
           };
@@ -275,8 +275,8 @@ export class MCPRouter {
           return {
             content: [
               {
-                type: "json",
-                json: { engines }
+              type: "text",
+              text: JSON.stringify({ engines }, null, 2)
               },
             ],
           };
@@ -287,11 +287,11 @@ export class MCPRouter {
           return {
             content: [
               {
-              type: "json",
-              json: { 
+              type: "text",
+              text: JSON.stringify({ 
                 engines: fallbackEngines,
                 note: "Fallback engines listed due to API timeout"
-              }
+              }, null, 2)
               },
             ],
           };
@@ -308,8 +308,8 @@ export class MCPRouter {
         return {
           content: [
             {
-                type: "json",
-                json: { videos }
+              type: "text",
+              text: JSON.stringify({ videos }, null, 2)
             },
           ],
         };
@@ -325,8 +325,8 @@ export class MCPRouter {
         return {
           content: [
             {
-                type: "json",
-                json: { musicTags }
+              type: "text",
+              text: JSON.stringify({ musicTags }, null, 2)
             },
           ],
         };
@@ -342,8 +342,8 @@ export class MCPRouter {
         return {
           content: [
             {
-                type: "json",
-                json: queueStatus
+              type: "text",
+              text: JSON.stringify(queueStatus, null, 2)
             },
           ],
         };
@@ -359,8 +359,8 @@ export class MCPRouter {
         return {
           content: [
             {
-                type: "json",
-                json: result
+              type: "text",
+              text: JSON.stringify(result, null, 2)
             },
           ],
         };
@@ -376,8 +376,8 @@ export class MCPRouter {
         return {
           content: [
             {
-                type: "json",
-                json: { message: "Queue processing restarted successfully" }
+              type: "text",
+              text: JSON.stringify({ message: "Queue processing restarted successfully" }, null, 2)
             },
           ],
         };
@@ -432,8 +432,8 @@ export class MCPRouter {
         return {
           content: [
             {
-                type: "json",
-                json: voiceExamples
+              type: "text",
+              text: JSON.stringify(voiceExamples, null, 2)
             },
           ],
         };
