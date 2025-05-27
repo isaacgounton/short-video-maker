@@ -87,6 +87,56 @@ export enum VoiceEnum {
   "en-AU-NatashaNeural" = "en-AU-NatashaNeural",
   "en-AU-WilliamNeural" = "en-AU-WilliamNeural",
   "en-CA-ClaraNeural" = "en-CA-ClaraNeural",
+  
+  // French voices
+  "fr-FR-DeniseNeural" = "fr-FR-DeniseNeural",
+  "fr-FR-HenriNeural" = "fr-FR-HenriNeural",
+  "fr-FR-JeromeNeural" = "fr-FR-JeromeNeural",
+  "fr-FR-JosephineNeural" = "fr-FR-JosephineNeural",
+  "fr-CA-AntoineNeural" = "fr-CA-AntoineNeural",
+  "fr-CA-JeanNeural" = "fr-CA-JeanNeural",
+  "fr-CA-SylvieNeural" = "fr-CA-SylvieNeural",
+  
+  // Spanish voices
+  "es-ES-ElviraNeural" = "es-ES-ElviraNeural",
+  "es-ES-AlvaroNeural" = "es-ES-AlvaroNeural",
+  "es-MX-DaliaNeural" = "es-MX-DaliaNeural",
+  "es-MX-JorgeNeural" = "es-MX-JorgeNeural",
+  
+  // German voices
+  "de-DE-KatjaNeural" = "de-DE-KatjaNeural",
+  "de-DE-ConradNeural" = "de-DE-ConradNeural",
+  "de-AT-IngridNeural" = "de-AT-IngridNeural",
+  "de-AT-JonasNeural" = "de-AT-JonasNeural",
+  
+  // Italian voices
+  "it-IT-ElsaNeural" = "it-IT-ElsaNeural",
+  "it-IT-IsabellaNeural" = "it-IT-IsabellaNeural",
+  "it-IT-DiegoNeural" = "it-IT-DiegoNeural",
+  
+  // Portuguese voices
+  "pt-BR-FranciscaNeural" = "pt-BR-FranciscaNeural",
+  "pt-BR-AntonioNeural" = "pt-BR-AntonioNeural",
+  "pt-PT-RaquelNeural" = "pt-PT-RaquelNeural",
+  "pt-PT-DuarteNeural" = "pt-PT-DuarteNeural",
+  
+  // Japanese voices
+  "ja-JP-NanamiNeural" = "ja-JP-NanamiNeural",
+  "ja-JP-KeitaNeural" = "ja-JP-KeitaNeural",
+  "ja-JP-AoiNeural" = "ja-JP-AoiNeural",
+  
+  // Chinese voices
+  "zh-CN-XiaoxiaoNeural" = "zh-CN-XiaoxiaoNeural",
+  "zh-CN-YunxiNeural" = "zh-CN-YunxiNeural",
+  "zh-CN-YunyangNeural" = "zh-CN-YunyangNeural",
+  "zh-TW-HsiaoChenNeural" = "zh-TW-HsiaoChenNeural",
+  "zh-TW-YunJheNeural" = "zh-TW-YunJheNeural",
+  
+  // Arabic voices
+  "ar-SA-ZariyahNeural" = "ar-SA-ZariyahNeural",
+  "ar-SA-HamedNeural" = "ar-SA-HamedNeural",
+  "ar-EG-ShakirNeural" = "ar-EG-ShakirNeural",
+  "ar-EG-SalmaNeural" = "ar-EG-SalmaNeural",
 }
 
 export enum OrientationEnum {
