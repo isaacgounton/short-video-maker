@@ -43,7 +43,14 @@ export class StreamlabsPolly {
         throw new Error(`TTS request failed with status ${response.status}`);
       }
 
-      const { audio_url } = response.data.response || response.data;
+      // Handle response format correctly - dahopevi returns data directly
+      const responseData = response.data;
+      const audio_url = responseData.audio_url;
+      const duration = responseData.duration;
+      
+      if (!audio_url) {
+        throw new Error(`No audio_url found in response: ${JSON.stringify(responseData)}`);
+      }
       
       // Download the audio file
       const audioResponse = await axios.get(audio_url, {
@@ -53,11 +60,17 @@ export class StreamlabsPolly {
 
       const audioBuffer = audioResponse.data;
       
-      // Estimate audio length (rough calculation for WAV files)
-      // WAV header is 44 bytes, then raw audio data
-      // Assuming 16-bit, 22050 Hz mono (typical for TTS)
-      const dataSize = audioBuffer.byteLength - 44;
-      const audioLength = dataSize / (2 * 22050); // 2 bytes per sample, 22050 samples per second
+      // Use duration from API response if available, otherwise estimate
+      let audioLength: number;
+      if (duration && typeof duration === 'number') {
+        audioLength = duration;
+      } else {
+        // Fallback: estimate audio length (rough calculation for WAV files)
+        // WAV header is 44 bytes, then raw audio data
+        // Assuming 16-bit, 22050 Hz mono (typical for TTS)
+        const dataSize = audioBuffer.byteLength - 44;
+        audioLength = dataSize / (2 * 22050); // 2 bytes per sample, 22050 samples per second
+      }
       
       logger.debug({ text, voice, audioLength, audioSize: audioBuffer.byteLength }, "Audio generated via dahopevi with streamlabs-polly");
 

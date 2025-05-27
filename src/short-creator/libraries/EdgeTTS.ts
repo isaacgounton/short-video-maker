@@ -37,19 +37,31 @@ export class EdgeTTS {
         }
       );
 
+      // Handle response format correctly - dahopevi returns data directly
+      const responseData = response.data;
+      const audio_url = responseData.audio_url;
+      const duration = responseData.duration;
+      
+      if (!audio_url) {
+        throw new Error(`No audio_url found in response: ${JSON.stringify(responseData)}`);
+      }
+
       // Download the audio file
-      const audioResponse = await axios.get(response.data.response.audio_url, {
+      const audioResponse = await axios.get(audio_url, {
         responseType: "arraybuffer",
       });
 
-      // Get audio duration - use a simple estimation based on file size and bitrate
-      // For more accurate duration, we'll let the downstream audio processing handle it
+      // Get audio duration from API response or estimate
       const audioBuffer = audioResponse.data;
       
-      // Rough estimation: assuming 128kbps MP3, 1 second ≈ 16KB
-      // This is a fallback - the actual duration will be calculated by FFmpeg later
-      const estimatedDuration = audioBuffer.byteLength / (128 * 1024 / 8); // seconds
-      const audioLength = Math.max(1, estimatedDuration); // minimum 1 second
+      // Use duration from API response if available, otherwise use conservative estimate
+      let audioLength: number;
+      if (duration && typeof duration === 'number') {
+        audioLength = duration;
+      } else {
+        // Conservative fallback - will be corrected by FFmpeg processing
+        audioLength = 10; // Conservative placeholder
+      }
       
       logger.debug({ 
         text, 

@@ -156,23 +156,15 @@ export class MCPRouter {
       "List all available TTS voices for all engines (uses cached/fallback voices for speed)",
       {},
       async () => {
-        // Always return fallback voices immediately to prevent timeouts
-        const fallbackVoices: { [key: string]: string[] } = {
-          kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
-          "edge-tts": [
-            "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural", 
-            "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "es-ES-ElviraNeural",
-            "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
-          ],
-          "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
-        };
+        // Use the fast method that doesn't trigger service initialization
+        const voices = this.shortCreator.ListAllAvailableVoicesFast();
         
         return {
           content: [
             {
             type: "text",
             text: JSON.stringify({
-              ...fallbackVoices,
+              ...voices,
               note: "Fast fallback voices - all engines available"
             }, null, 2)
             },
@@ -188,44 +180,21 @@ export class MCPRouter {
         engine: z.enum(["kokoro", "edge-tts", "streamlabs-polly"]).describe("TTS engine name"),
       },
       async ({ engine }) => {
-        try {
-          // Use a timeout to prevent hanging
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("Timeout")), 3000);
-          });
-          
-          const voicesPromise = this.shortCreator.ListAvailableVoicesForEngine(engine as any);
-          const voices = await Promise.race([voicesPromise, timeoutPromise]);
-          
-          return {
-            content: [
-              {
+        // Use the fast method that doesn't trigger service initialization
+        const voices = this.shortCreator.ListAvailableVoicesForEngineFast(engine as any);
+        
+        return {
+          content: [
+            {
               type: "text",
-              text: JSON.stringify({ engine, voices }, null, 2)
-              },
-            ],
-          };
-        } catch (error) {
-          // Fallback voice lists based on engine
-          const fallbackVoices: { [key: string]: string[] } = {
-            kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
-            "edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "fr-FR-DeniseNeural", "es-ES-ElviraNeural", "de-DE-KatjaNeural"],
-            "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
-          };
-          
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify({ 
-                  engine, 
-                  voices: fallbackVoices[engine] || [],
-                  note: "Fallback voices used due to API timeout"
-                }, null, 2)
-              },
-            ],
-          };
-        }
+              text: JSON.stringify({
+                engine,
+                voices,
+                note: "Fast fallback voices - no API calls required"
+              }, null, 2)
+            },
+          ],
+        };
       },
     );
 

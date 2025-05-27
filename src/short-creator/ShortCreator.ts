@@ -165,6 +165,21 @@ export class ShortCreator {
       const captions = await this.whisper.CreateCaption(tempWavPath);
 
       await this.ffmpeg.saveToMp3(audioStream, tempMp3Path);
+      
+      // Get actual audio duration from the processed file to fix scene cutting issues
+      try {
+        const actualDuration = await this.ffmpeg.getAudioDuration(tempMp3Path);
+        if (actualDuration > 0) {
+          logger.debug({
+            originalDuration: audioLength,
+            actualDuration,
+            scene: scene.text.substring(0, 50) + "..."
+          }, "Updated audio duration from FFmpeg");
+          audioLength = actualDuration;
+        }
+      } catch (error) {
+        logger.warn({ error, audioLength }, "Could not get actual audio duration, using estimated duration");
+      }
       const video = await this.pexelsApi.findVideo(
         scene.searchTerms,
         audioLength,
@@ -335,6 +350,34 @@ export class ShortCreator {
       logger.error({ engine, error }, "Failed to get voices for TTS engine");
       return [];
     }
+  }
+
+  public ListAvailableVoicesForEngineFast(engine: TTSEngineEnum): string[] {
+    // Fast fallback method that doesn't trigger service initialization
+    const fallbackVoices: { [key: string]: string[] } = {
+      kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
+      "edge-tts": [
+        "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural",
+        "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "es-ES-ElviraNeural",
+        "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
+      ],
+      "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
+    };
+    
+    return fallbackVoices[engine] || [];
+  }
+
+  public ListAllAvailableVoicesFast(): Record<string, string[]> {
+    // Fast fallback method that doesn't trigger service initialization
+    return {
+      kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
+      "edge-tts": [
+        "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural",
+        "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "es-ES-ElviraNeural",
+        "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
+      ],
+      "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
+    };
   }
 
   public async ListAllAvailableVoices(): Promise<Record<string, string[]>> {

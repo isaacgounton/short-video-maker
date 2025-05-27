@@ -39,6 +39,26 @@ export class FFMpeg {
     });
   }
 
+  async getAudioDuration(audioPath: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(audioPath, (error: any, metadata: any) => {
+        if (error) {
+          logger.error({ error, audioPath }, "Error getting audio duration");
+          reject(error);
+          return;
+        }
+        
+        const duration = metadata?.format?.duration;
+        if (typeof duration === 'number' && duration > 0) {
+          logger.debug({ audioPath, duration }, "Got audio duration from FFmpeg");
+          resolve(duration);
+        } else {
+          reject(new Error(`Invalid duration from FFmpeg: ${duration}`));
+        }
+      });
+    });
+  }
+
   async createMp3DataUri(audio: ArrayBuffer): Promise<string> {
     const inputStream = new Readable();
     inputStream.push(Buffer.from(audio));
