@@ -6,7 +6,14 @@ interface EdgeTTSResponse {
   response: {
     audio_url: string;
     subtitle_url: string;
+    duration?: number;
   };
+}
+
+interface DahopeviResponse {
+  audio_url: string;
+  subtitle_url: string;
+  duration?: number;
 }
 
 export class EdgeTTS {
@@ -37,10 +44,21 @@ export class EdgeTTS {
         }
       );
 
-      // Handle response format correctly - dahopevi returns data directly
-      const responseData = response.data;
-      const audio_url = responseData.audio_url;
-      const duration = responseData.duration;
+      // Handle both response formats: dahopevi direct and wrapped responses
+      const responseData = response.data as DahopeviResponse | EdgeTTSResponse;
+      
+      let audio_url: string;
+      let duration: number | undefined;
+      
+      // Check if it's the wrapped format (EdgeTTSResponse)
+      if ('response' in responseData) {
+        audio_url = responseData.response.audio_url;
+        duration = responseData.response.duration;
+      } else {
+        // Direct format (DahopeviResponse)
+        audio_url = responseData.audio_url;
+        duration = responseData.duration;
+      }
       
       if (!audio_url) {
         throw new Error(`No audio_url found in response: ${JSON.stringify(responseData)}`);
