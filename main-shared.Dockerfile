@@ -55,7 +55,7 @@ COPY --from=build /app/dist /app/dist
 COPY package.json /app/
 
 # Set required directories and permissions - create all needed directories upfront
-RUN mkdir -p /app/data/videos /app/data/temp /app/static/music && \
+RUN mkdir -p /app/data/videos /app/data/temp /app/data/voices /app/static/music && \
     chmod -R 777 /app/data
 
 # Run as root to avoid permission issues in cloud environments like Coolify
