@@ -42,16 +42,21 @@ export class EdgeTTS {
         responseType: "arraybuffer",
       });
 
-      // Get audio duration using the audio buffer
+      // Get audio duration - use a simple estimation based on file size and bitrate
+      // For more accurate duration, we'll let the downstream audio processing handle it
       const audioBuffer = audioResponse.data;
-      const audioContext = new (require("web-audio-api").AudioContext)();
-      const audioLength = await new Promise<number>((resolve) => {
-        audioContext.decodeAudioData(audioBuffer, (buffer: { duration: number }) => {
-          resolve(buffer.duration);
-        });
-      });
-
-      logger.debug({ text, voice, audioLength }, "Audio generated with Dahopevi");
+      
+      // Rough estimation: assuming 128kbps MP3, 1 second ≈ 16KB
+      // This is a fallback - the actual duration will be calculated by FFmpeg later
+      const estimatedDuration = audioBuffer.byteLength / (128 * 1024 / 8); // seconds
+      const audioLength = Math.max(1, estimatedDuration); // minimum 1 second
+      
+      logger.debug({ 
+        text, 
+        voice, 
+        audioLength: `${audioLength}s (estimated)`,
+        fileSize: `${audioBuffer.byteLength} bytes`
+      }, "Audio generated with Dahopevi");
 
       return {
         audio: audioBuffer,
