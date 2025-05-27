@@ -74,10 +74,7 @@ export const PortraitVideo: React.FC<z.infer<typeof shortVideoSchema>> = ({
           scenes.slice(0, i).reduce((acc, curr) => {
             return acc + curr.audio.duration;
           }, 0) * fps;
-        let durationInFrames =
-          scenes.slice(0, i + 1).reduce((acc, curr) => {
-            return acc + curr.audio.duration;
-          }, 0) * fps;
+        let durationInFrames = scene.audio.duration * fps;
         if (config.paddingBack && i === scenes.length - 1) {
           durationInFrames += (config.paddingBack / 1000) * fps;
         }

@@ -154,32 +154,39 @@ export class EdgeTTS {
 
       const response = await axios.get(`${this.baseUrl}/v1/audio/speech/voices`, {
         headers,
+        timeout: 5000, // 5 second timeout
       });
       
       const voices = response.data?.response?.voices || [];
       const edgeVoices = voices.filter((voice: { engine?: string }) => voice?.engine === "edge-tts");
       
       if (!edgeVoices.length) {
-        logger.warn("No edge-tts voices found in API response");
+        logger.warn("No edge-tts voices found in API response, using fallback voices");
         return this.getFallbackVoices();
       }
       
       return edgeVoices.map((voice: { name?: string }) => voice?.name).filter(Boolean);
     } catch (error) {
-      logger.error("Error fetching voices from Dahopevi:", error);
-      return this.listAvailableVoices(); // fallback to static list
+      logger.error("Error fetching voices from Dahopevi (using fallback voices):", error);
+      return this.getFallbackVoices(); // Always return fallback voices on error
     }
   }
 
   static async init(apiKey: string, baseUrl: string): Promise<EdgeTTS> {
     const instance = new EdgeTTS(apiKey, baseUrl);
     try {
-      // Pre-fetch and cache voices during initialization
-      const voices = await instance.getAvailableVoicesFromAPI();
+      // Pre-fetch and cache voices during initialization with timeout
+      const timeoutPromise = new Promise<string[]>((_, reject) => {
+        setTimeout(() => reject(new Error("Timeout during initialization")), 3000);
+      });
+      
+      const voicesPromise = instance.getAvailableVoicesFromAPI();
+      const voices = await Promise.race([voicesPromise, timeoutPromise]);
+      
       instance.cachedVoices = voices;
       logger.info(`Cached ${voices.length} EdgeTTS voices from dahopevi API`);
     } catch (error) {
-      logger.warn("Failed to fetch voices from API during initialization, will use fallback list until next API call succeeds");
+      logger.warn("Failed to fetch voices from API during initialization, using fallback voices");
       instance.cachedVoices = instance.getFallbackVoices();
     }
     return instance;

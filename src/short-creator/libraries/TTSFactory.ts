@@ -43,10 +43,7 @@ export class TTSFactory {
         const dahopevi_url = process.env.DAHOPEVI_BASE_URL || process.env.DAHOPEVI_URL || 'https://api.dahopevi.com';
         const api_key = process.env.DAHOPEVI_API_KEY || '';
         service = await EdgeTTS.init(api_key, dahopevi_url);
-        // Force an initial voices fetch to ensure we have the most up-to-date list
-        await (service as EdgeTTS).getAvailableVoicesFromAPI().catch(err => {
-          logger.warn("Could not fetch initial voices list, will retry later:", err);
-        });
+        // EdgeTTS.init already handles voice fetching with timeout, no need to call again
         break;
       
       case TTSEngineEnum.streamlabspolly:

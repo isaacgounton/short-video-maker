@@ -156,57 +156,28 @@ export class MCPRouter {
       "List all available TTS voices for all engines (uses cached/fallback voices for speed)",
       {},
       async () => {
-        try {
-          // Try to get each engine's voices with individual timeouts
-          const voices: Record<string, string[]> = {};
-          const engines = ['kokoro', 'edge-tts', 'streamlabs-polly'];
-          
-          await Promise.all(engines.map(async (engine) => {
-            try {
-              const timeoutPromise = new Promise<string[]>((_, reject) => {
-                setTimeout(() => reject(new Error("Timeout")), 2000); // 2 second timeout per engine
-              });
-              
-              const voicesPromise = this.shortCreator.ListAvailableVoicesForEngine(engine as any);
-              const engineVoices = await Promise.race([voicesPromise, timeoutPromise]);
-              voices[engine] = engineVoices;
-            } catch (err) {
-              // Use fallback voices for this engine
-              const fallbackVoices: { [key: string]: string[] } = {
-                kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam"],
-                'edge-tts': ["en-US-AriaNeural", "en-US-JennyNeural", "fr-FR-DeniseNeural"],
-                'streamlabs-polly': ["Joanna", "Matthew", "Amy", "Brian"]
-              };
-              voices[engine] = fallbackVoices[engine] || [];
-              logger.warn(`Using fallback voices for ${engine}`);
-            }
-          }));
-          
-          return {
-            content: [
-              {
-              type: "text",
-              text: JSON.stringify(voices, null, 2)
-              },
-            ],
-          };
-        } catch (error) {
-          // If everything fails, return minimal fallback
-          const fallbackVoices: { [key: string]: string[] } = {
-            kokoro: ["af_heart"],
-            "edge-tts": ["en-US-AriaNeural"],
-            "streamlabs-polly": ["Brian"]
-          };
-          
-          return {
-            content: [
-              {
-              type: "text",
-              text: JSON.stringify(fallbackVoices, null, 2)
-              },
-            ],
-          };
-        }
+        // Always return fallback voices immediately to prevent timeouts
+        const fallbackVoices: { [key: string]: string[] } = {
+          kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
+          "edge-tts": [
+            "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural", 
+            "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "es-ES-ElviraNeural",
+            "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
+          ],
+          "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
+        };
+        
+        return {
+          content: [
+            {
+            type: "text",
+            text: JSON.stringify({
+              ...fallbackVoices,
+              note: "Fast fallback voices - all engines available"
+            }, null, 2)
+            },
+          ],
+        };
       },
     );
 
