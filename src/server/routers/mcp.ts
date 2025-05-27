@@ -172,7 +172,7 @@ export class MCPRouter {
               voices[engine] = engineVoices;
             } catch (err) {
               // Use fallback voices for this engine
-              const fallbackVoices = {
+              const fallbackVoices: { [key: string]: string[] } = {
                 kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam"],
                 'edge-tts': ["en-US-AriaNeural", "en-US-JennyNeural", "fr-FR-DeniseNeural"],
                 'streamlabs-polly': ["Joanna", "Matthew", "Amy", "Brian"]
@@ -192,7 +192,7 @@ export class MCPRouter {
           };
         } catch (error) {
           // If everything fails, return minimal fallback
-          const fallbackVoices = {
+          const fallbackVoices: { [key: string]: string[] } = {
             kokoro: ["af_heart"],
             "edge-tts": ["en-US-AriaNeural"],
             "streamlabs-polly": ["Brian"]
@@ -236,7 +236,7 @@ export class MCPRouter {
           };
         } catch (error) {
           // Fallback voice lists based on engine
-          const fallbackVoices: Record<string, string[]> = {
+          const fallbackVoices: { [key: string]: string[] } = {
             kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
             "edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "fr-FR-DeniseNeural", "es-ES-ElviraNeural", "de-DE-KatjaNeural"],
             "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
