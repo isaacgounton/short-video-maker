@@ -41,6 +41,7 @@ export const sceneInput = z.object({
 export type SceneInput = z.infer<typeof sceneInput>;
 
 export enum VoiceEnum {
+  // Kokoro voices (original enum values)
   af_heart = "af_heart",
   af_alloy = "af_alloy",
   af_aoede = "af_aoede",
@@ -69,6 +70,23 @@ export enum VoiceEnum {
   bf_lily = "bf_lily",
   bm_daniel = "bm_daniel",
   bm_fable = "bm_fable",
+  
+  // Azure EdgeTTS voices
+  "en-US-AriaNeural" = "en-US-AriaNeural",
+  "en-US-JennyNeural" = "en-US-JennyNeural", 
+  "en-US-GuyNeural" = "en-US-GuyNeural",
+  "en-US-AnaNeural" = "en-US-AnaNeural",
+  "en-US-ChristopherNeural" = "en-US-ChristopherNeural",
+  "en-US-EricNeural" = "en-US-EricNeural",
+  "en-US-MichelleNeural" = "en-US-MichelleNeural",
+  "en-US-RogerNeural" = "en-US-RogerNeural",
+  "en-US-SteffanNeural" = "en-US-SteffanNeural",
+  "en-GB-SoniaNeural" = "en-GB-SoniaNeural",
+  "en-GB-RyanNeural" = "en-GB-RyanNeural",
+  "en-GB-LibbyNeural" = "en-GB-LibbyNeural",
+  "en-AU-NatashaNeural" = "en-AU-NatashaNeural",
+  "en-AU-WilliamNeural" = "en-AU-WilliamNeural",
+  "en-CA-ClaraNeural" = "en-CA-ClaraNeural",
 }
 
 export enum OrientationEnum {
@@ -111,7 +129,7 @@ export const renderConfig = z.object({
       "Background color of the caption, a valid css color, default is blue",
     ),
   voice: z
-    .nativeEnum(VoiceEnum)
+    .string()
     .optional()
     .describe("Voice to be used for the speech, default is af_heart"),
   orientation: z
@@ -129,7 +147,7 @@ export const renderConfig = z.object({
 });
 export type RenderConfig = z.infer<typeof renderConfig>;
 
-export type Voices = `${VoiceEnum}`;
+export type Voices = string;
 
 export type Video = {
   id: string;

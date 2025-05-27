@@ -31,7 +31,9 @@ export class ShortCreator {
     sceneInput: SceneInput[];
     config: RenderConfig;
     id: string;
+    timestamp: number;
   }[] = [];
+  private isProcessing = false;
   constructor(
     private config: Config,
     private remotion: Remotion,
@@ -54,37 +56,57 @@ export class ShortCreator {
   }
 
   public addToQueue(sceneInput: SceneInput[], config: RenderConfig): string {
-    // todo add mutex lock
     const id = cuid();
     this.queue.push({
       sceneInput,
       config,
       id,
+      timestamp: Date.now(),
     });
-    if (this.queue.length === 1) {
+    
+    // Start processing if not already processing
+    if (!this.isProcessing) {
       this.processQueue();
     }
     return id;
   }
 
   private async processQueue(): Promise<void> {
-    // todo add a semaphore
-    if (this.queue.length === 0) {
+    // Prevent concurrent processing
+    if (this.isProcessing) {
       return;
     }
-    const { sceneInput, config, id } = this.queue[0];
-    logger.debug(
-      { sceneInput, config, id },
-      "Processing video item in the queue",
-    );
+    
+    this.isProcessing = true;
+    
     try {
-      await this.createShort(id, sceneInput, config);
-      logger.debug({ id }, "Video created successfully");
-    } catch (error: unknown) {
-      logger.error(error, "Error creating video");
+      while (this.queue.length > 0) {
+        const currentItem = this.queue[0];
+        const { sceneInput, config, id, timestamp } = currentItem;
+        
+        // Check for timeout (30 minutes)
+        const now = Date.now();
+        const timeout = 30 * 60 * 1000; // 30 minutes
+        if (now - timestamp > timeout) {
+          logger.warn({ id, timestamp, now }, "Video processing timed out, removing from queue");
+          this.queue.shift();
+          continue;
+        }
+        
+        logger.info({ id, queueLength: this.queue.length }, "Processing video item in the queue");
+        
+        try {
+          await this.createShort(id, sceneInput, config);
+          logger.info({ id }, "Video created successfully");
+        } catch (error: unknown) {
+          logger.error({ error, id }, "Error creating video, moving to next item");
+        }
+        
+        // Remove the processed item from queue
+        this.queue.shift();
+      }
     } finally {
-      this.queue.shift();
-      this.processQueue();
+      this.isProcessing = false;
     }
   }
 
@@ -322,6 +344,55 @@ export class ShortCreator {
     } catch (error) {
       logger.error({ error }, "Failed to get all available voices");
       return {};
+    }
+  }
+
+  // Admin methods for queue management
+  public getQueueStatus(): { queueLength: number; isProcessing: boolean; items: Array<{id: string; timestamp: number; age: number}> } {
+    const now = Date.now();
+    return {
+      queueLength: this.queue.length,
+      isProcessing: this.isProcessing,
+      items: this.queue.map(item => ({
+        id: item.id,
+        timestamp: item.timestamp,
+        age: now - item.timestamp
+      }))
+    };
+  }
+
+  public clearStuckVideos(): { removed: number; clearedProcessing: boolean } {
+    const now = Date.now();
+    const timeout = 30 * 60 * 1000; // 30 minutes
+    const initialLength = this.queue.length;
+    
+    // Remove timed out items
+    this.queue = this.queue.filter(item => {
+      const isTimedOut = now - item.timestamp > timeout;
+      if (isTimedOut) {
+        logger.warn({ id: item.id, age: now - item.timestamp }, "Removing timed out video from queue");
+      }
+      return !isTimedOut;
+    });
+    
+    const removed = initialLength - this.queue.length;
+    
+    // Reset processing flag if queue is empty
+    let clearedProcessing = false;
+    if (this.queue.length === 0 && this.isProcessing) {
+      this.isProcessing = false;
+      clearedProcessing = true;
+      logger.info("Reset processing flag due to empty queue");
+    }
+    
+    return { removed, clearedProcessing };
+  }
+
+  public forceRestartQueue(): void {
+    logger.info("Force restarting queue processing");
+    this.isProcessing = false;
+    if (this.queue.length > 0) {
+      this.processQueue();
     }
   }
 }

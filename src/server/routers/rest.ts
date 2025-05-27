@@ -267,5 +267,56 @@ export class APIRouter {
         }
       },
     );
+
+    // Admin endpoints for queue management
+    this.router.get(
+      "/admin/queue-status",
+      (req: ExpressRequest, res: ExpressResponse) => {
+        try {
+          const status = this.shortCreator.getQueueStatus();
+          res.status(200).json(status);
+        } catch (error: unknown) {
+          logger.error(error, "Error getting queue status");
+          res.status(500).json({
+            error: "Failed to get queue status",
+          });
+        }
+      },
+    );
+
+    this.router.post(
+      "/admin/clear-stuck-videos",
+      (req: ExpressRequest, res: ExpressResponse) => {
+        try {
+          const result = this.shortCreator.clearStuckVideos();
+          res.status(200).json({
+            message: "Cleared stuck videos",
+            ...result,
+          });
+        } catch (error: unknown) {
+          logger.error(error, "Error clearing stuck videos");
+          res.status(500).json({
+            error: "Failed to clear stuck videos",
+          });
+        }
+      },
+    );
+
+    this.router.post(
+      "/admin/restart-queue",
+      (req: ExpressRequest, res: ExpressResponse) => {
+        try {
+          this.shortCreator.forceRestartQueue();
+          res.status(200).json({
+            message: "Queue processing restarted",
+          });
+        } catch (error: unknown) {
+          logger.error(error, "Error restarting queue");
+          res.status(500).json({
+            error: "Failed to restart queue",
+          });
+        }
+      },
+    );
   }
 }
