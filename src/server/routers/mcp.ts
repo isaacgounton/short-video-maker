@@ -31,6 +31,87 @@ export class MCPRouter {
 
   private setupMCPServer() {
     this.mcpServer.tool(
+      "list-tools",
+      "List all available MCP tools with their descriptions and parameters",
+      {},
+      async () => {
+        const tools = [
+          {
+            name: "get-video-status",
+            description: "Get the status of a video (ready, processing, failed)",
+            parameters: {
+              videoId: "The ID of the video"
+            }
+          },
+          {
+            name: "create-short-video",
+            description: "Create a short video from a list of scenes",
+            parameters: {
+              scenes: "Each scene to be created",
+              config: "Configuration for rendering the video"
+            }
+          },
+          {
+            name: "list-available-voices",
+            description: "List all available TTS voices for all engines",
+            parameters: {}
+          },
+          {
+            name: "list-voices-for-engine",
+            description: "List available voices for a specific TTS engine",
+            parameters: {
+              engine: "TTS engine name (kokoro, edge-tts, streamlabs-polly)"
+            }
+          },
+          {
+            name: "list-tts-engines",
+            description: "List all available TTS engines",
+            parameters: {}
+          },
+          {
+            name: "list-all-videos",
+            description: "List all videos in the system with their status",
+            parameters: {}
+          },
+          {
+            name: "list-music-tags",
+            description: "List all available music mood tags",
+            parameters: {}
+          },
+          {
+            name: "get-queue-status",
+            description: "Get the current status of the video processing queue (admin tool)",
+            parameters: {}
+          },
+          {
+            name: "clear-stuck-videos",
+            description: "Remove videos stuck in the queue for more than 30 minutes (admin tool)",
+            parameters: {}
+          },
+          {
+            name: "restart-queue",
+            description: "Force restart the video processing queue (admin tool)",
+            parameters: {}
+          },
+          {
+            name: "get-voice-examples",
+            description: "Get example voices for different languages and TTS engines",
+            parameters: {}
+          }
+        ];
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ tools }, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
       "get-video-status",
       "Get the status of a video (ready, processing, failed)",
       {
@@ -76,28 +157,45 @@ export class MCPRouter {
       {},
       async () => {
         try {
-          // Use a timeout to prevent hanging
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("Timeout")), 5000);
-          });
+          // Try to get each engine's voices with individual timeouts
+          const voices: Record<string, string[]> = {};
+          const engines = ['kokoro', 'edge-tts', 'streamlabs-polly'];
           
-          const voicesPromise = this.shortCreator.ListAllAvailableVoices();
-          const allVoices = await Promise.race([voicesPromise, timeoutPromise]);
+          await Promise.all(engines.map(async (engine) => {
+            try {
+              const timeoutPromise = new Promise<string[]>((_, reject) => {
+                setTimeout(() => reject(new Error("Timeout")), 2000); // 2 second timeout per engine
+              });
+              
+              const voicesPromise = this.shortCreator.ListAvailableVoicesForEngine(engine as any);
+              const engineVoices = await Promise.race([voicesPromise, timeoutPromise]);
+              voices[engine] = engineVoices;
+            } catch (err) {
+              // Use fallback voices for this engine
+              const fallbackVoices = {
+                kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam"],
+                'edge-tts': ["en-US-AriaNeural", "en-US-JennyNeural", "fr-FR-DeniseNeural"],
+                'streamlabs-polly': ["Joanna", "Matthew", "Amy", "Brian"]
+              };
+              voices[engine] = fallbackVoices[engine] || [];
+              logger.warn(`Using fallback voices for ${engine}`);
+            }
+          }));
           
           return {
             content: [
               {
                 type: "text",
-                text: JSON.stringify(allVoices, null, 2),
+                text: JSON.stringify(voices, null, 2),
               },
             ],
           };
         } catch (error) {
-          // Fallback to basic voice lists if API fails or times out
+          // If everything fails, return minimal fallback
           const fallbackVoices = {
-            kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
-            "edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "fr-FR-DeniseNeural", "es-ES-ElviraNeural"],
-            "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian"]
+            kokoro: ["af_heart"],
+            "edge-tts": ["en-US-AriaNeural"],
+            "streamlabs-polly": ["Brian"]
           };
           
           return {
