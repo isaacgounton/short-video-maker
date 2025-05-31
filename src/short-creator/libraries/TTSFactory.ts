@@ -48,15 +48,41 @@ export class TTSFactory {
   static async getAllAvailableVoices(): Promise<Record<TTSEngineEnum, string[]>> {
     const voices: Record<string, string[]> = {};
     
-    for (const engine of Object.values(TTSEngineEnum)) {
+    // Use Promise.allSettled to handle timeouts gracefully
+    const voicePromises = Object.values(TTSEngineEnum).map(async (engine) => {
       try {
-        const service = await this.getTTSService(engine);
-        voices[engine] = service.listAvailableVoices();
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Voice fetching timeout')), 8000);
+        });
+        
+        const servicePromise = this.getTTSService(engine).then(service =>
+          service.listAvailableVoices()
+        );
+        
+        const voiceList = await Promise.race([servicePromise, timeoutPromise]);
+        return { engine, voices: voiceList };
       } catch (error) {
         logger.warn({ engine, error }, "Failed to get voices for TTS engine");
-        voices[engine] = [];
+        return { engine, voices: [] };
       }
-    }
+    });
+    
+    const results = await Promise.allSettled(voicePromises);
+    
+    results.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        voices[result.value.engine] = result.value.voices;
+      } else {
+        // Find which engine failed and set empty array
+        const failedEngine = Object.values(TTSEngineEnum).find(
+          engine => !voices.hasOwnProperty(engine)
+        );
+        if (failedEngine) {
+          voices[failedEngine] = [];
+        }
+      }
+    });
     
     return voices as Record<TTSEngineEnum, string[]>;
   }

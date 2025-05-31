@@ -281,54 +281,68 @@ export class OpenAIEdgeTTS implements TTSService {
     return "en-US-AriaNeural";
   }
 
-  private async callLocalTTSService(text: string, voice: string): Promise<ArrayBuffer> {
+  private async callLocalTTSService(text: string, voice: string, retries: number = 3): Promise<ArrayBuffer> {
     // Get the TTS service URL from environment or use default
     // In Docker, use the service name 'edge-tts', otherwise fall back to localhost
     const ttsServiceUrl = process.env?.OPENAI_EDGE_TTS_URL ||
                          (process.env?.DOCKER === 'true' ? 'http://edge-tts:5050' : 'http://localhost:5050');
     const apiKey = process.env?.DAHOPEVI_API_KEY || process.env?.API_KEY || 'your-api-key';
     
-    try {
-      logger.debug({ ttsServiceUrl, voice }, "Calling local OpenAI Edge TTS service");
-      
-      const response = await fetch(`${ttsServiceUrl}/v1/audio/speech`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          input: text,
-          voice: voice,
-          response_format: 'mp3',
-          speed: 1.0,
-        }),
-      });
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        logger.debug({ ttsServiceUrl, voice, attempt, retries }, "Calling local OpenAI Edge TTS service");
+        
+        const response = await fetch(`${ttsServiceUrl}/v1/audio/speech`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            input: text,
+            voice: voice,
+            response_format: 'mp3',
+            speed: 1.0,
+          }),
+          signal: AbortSignal.timeout(30000), // 30 second timeout for TTS generation
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`TTS service responded with ${response.status}: ${errorText}`);
-      }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`TTS service responded with ${response.status}: ${errorText}`);
+        }
 
-      const audioBuffer = await response.arrayBuffer();
-      logger.debug({ audioSize: audioBuffer.byteLength }, "Audio generated successfully");
-      
-      return audioBuffer;
-    } catch (error) {
-      logger.error({
-        error: error instanceof Error ? error.message : String(error),
-        ttsServiceUrl,
-        voice,
-        textLength: text.length
-      }, "Error calling local TTS service");
-      
-      // Provide more specific error information
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error(`Unable to connect to TTS service at ${ttsServiceUrl}. Please ensure the OpenAI Edge TTS service is running and accessible.`);
+        const audioBuffer = await response.arrayBuffer();
+        logger.debug({ audioSize: audioBuffer.byteLength, attempt }, "Audio generated successfully");
+        
+        return audioBuffer;
+        
+      } catch (error) {
+        logger.warn({
+          error: error instanceof Error ? error.message : String(error),
+          ttsServiceUrl,
+          voice,
+          textLength: text.length,
+          attempt,
+          retries
+        }, "Error calling local TTS service");
+        
+        if (attempt < retries) {
+          // Wait before retrying (exponential backoff)
+          const waitTime = Math.min(2000 * Math.pow(2, attempt - 1), 10000);
+          logger.debug({ waitTime, attempt }, "Waiting before TTS retry");
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+          // Final attempt failed, throw error
+          if (error instanceof TypeError && error.message.includes('fetch')) {
+            throw new Error(`Unable to connect to TTS service at ${ttsServiceUrl}. Please ensure the OpenAI Edge TTS service is running and accessible.`);
+          }
+          throw error;
+        }
       }
-      
-      throw error;
     }
+    
+    throw new Error('TTS service call failed after all retries');
   }
 
   private async convertToArrayBuffer(audioData: any): Promise<ArrayBuffer> {
@@ -384,40 +398,52 @@ export class OpenAIEdgeTTS implements TTSService {
     return [...this.cachedVoices];
   }
 
-  async testConnection(): Promise<boolean> {
+  async testConnection(retries: number = 3): Promise<boolean> {
     const ttsServiceUrl = process.env?.OPENAI_EDGE_TTS_URL ||
                          (process.env?.DOCKER === 'true' ? 'http://edge-tts:5050' : 'http://localhost:5050');
     const apiKey = process.env?.DAHOPEVI_API_KEY || process.env?.API_KEY || 'your-api-key';
     
-    try {
-      logger.debug({ ttsServiceUrl }, "Testing TTS service connection");
-      
-      const response = await fetch(`${ttsServiceUrl}/v1/voices`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        signal: AbortSignal.timeout(5000), // 5 second timeout
-      });
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        logger.debug({ ttsServiceUrl, attempt, retries }, "Testing TTS service connection");
+        
+        const response = await fetch(`${ttsServiceUrl}/v1/voices`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          signal: AbortSignal.timeout(15000), // 15 second timeout
+        });
 
-      if (response.ok) {
-        logger.info({ ttsServiceUrl }, "TTS service connection successful");
-        return true;
-      } else {
+        if (response.ok) {
+          logger.info({ ttsServiceUrl, attempt }, "TTS service connection successful");
+          return true;
+        } else {
+          logger.warn({
+            ttsServiceUrl,
+            attempt,
+            status: response.status,
+            statusText: response.statusText
+          }, "TTS service connection failed");
+        }
+      } catch (error) {
         logger.warn({
           ttsServiceUrl,
-          status: response.status,
-          statusText: response.statusText
-        }, "TTS service connection failed");
-        return false;
+          attempt,
+          retries,
+          error: error instanceof Error ? error.message : String(error)
+        }, "TTS service connection test failed");
+        
+        if (attempt < retries) {
+          // Wait before retrying (exponential backoff)
+          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          logger.debug({ waitTime }, "Waiting before retry");
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
-    } catch (error) {
-      logger.error({
-        ttsServiceUrl,
-        error: error instanceof Error ? error.message : String(error)
-      }, "TTS service connection test failed");
-      return false;
     }
+    
+    return false;
   }
 
   static async init(): Promise<OpenAIEdgeTTS> {

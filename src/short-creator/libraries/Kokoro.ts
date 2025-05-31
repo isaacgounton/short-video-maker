@@ -121,18 +121,18 @@ export class Kokoro {
       await kokoro.testConnection();
       logger.info("Successfully connected to dahopevi TTS service");
       
-      // Fetch and cache available voices from API
-      try {
-        const voices = await kokoro.getVoicesFromDahopevi();
+      // Fetch and cache available voices from API (non-blocking)
+      // Don't block initialization on voice fetching since we have fallbacks
+      kokoro.getVoicesFromDahopevi().then(voices => {
         if (voices.length > 0) {
           logger.info({ voiceCount: voices.length }, "Successfully fetched kokoro voices from dahopevi API");
         } else {
           logger.warn("No kokoro voices found in dahopevi API, will use fallback list");
         }
-      } catch (error) {
+      }).catch(error => {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.warn({ error: errorMessage }, "Could not fetch voices during initialization, will use fallback list");
-      }
+        logger.warn({ error: errorMessage }, "Could not fetch kokoro voices from dahopevi");
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.warn({ error: errorMessage }, "Could not verify dahopevi connection, but continuing");
@@ -150,7 +150,7 @@ export class Kokoro {
 
       await axios.get(`${this.dahopevi_url}/health`, {
         headers,
-        timeout: 5000
+        timeout: 3000 // Reduced timeout for faster startup
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -206,7 +206,7 @@ export class Kokoro {
 
       const response = await axios.get(`${this.dahopevi_url}/v1/audio/speech/voices`, {
         headers,
-        timeout: 10000
+        timeout: 5000 // Reduced timeout to 5 seconds
       });
 
       // Filter for kokoro voices and cache them
