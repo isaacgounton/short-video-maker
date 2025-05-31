@@ -1,17 +1,8 @@
 import { Kokoro } from "./Kokoro";
-import { EdgeTTS } from "./EdgeTTS";
-import { StreamlabsPolly } from "./StreamlabsPolly";
+import { OpenAIEdgeTTS } from "./OpenAIEdgeTTS";
 import { TTSEngineEnum, Voices } from "../../types/shorts";
 import { logger } from "../../config";
 
-declare const process: {
-  env: {
-    DAHOPEVI_BASE_URL?: string;
-    DAHOPEVI_URL?: string;
-    DAHOPEVI_API_KEY?: string;
-    [key: string]: string | undefined;
-  };
-};
 
 export interface TTSService {
   generate(text: string, voice: Voices): Promise<{
@@ -39,15 +30,8 @@ export class TTSFactory {
         service = await Kokoro.init("fp32");
         break;
       
-      case TTSEngineEnum.edgetts:
-        const dahopevi_url = process.env.DAHOPEVI_BASE_URL || process.env.DAHOPEVI_URL || 'https://api.dahopevi.com';
-        const api_key = process.env.DAHOPEVI_API_KEY || '';
-        service = await EdgeTTS.init(api_key, dahopevi_url);
-        // EdgeTTS.init already handles voice fetching with timeout, no need to call again
-        break;
-      
-      case TTSEngineEnum.streamlabspolly:
-        service = await StreamlabsPolly.init();
+      case TTSEngineEnum.openaiEdgeTTS:
+        service = await OpenAIEdgeTTS.init();
         break;
       
       default:

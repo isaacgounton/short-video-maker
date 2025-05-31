@@ -46,10 +46,10 @@ const VideoCreator: React.FC = () => {
     music: MusicMoodEnum.chill,
     captionPosition: CaptionPositionEnum.bottom,
     captionBackgroundColor: "blue",
-    voice: VoiceEnum.af_heart,
+    voice: "alloy", // Default OpenAI Edge TTS voice
     orientation: OrientationEnum.portrait,
     musicVolume: MusicVolumeEnum.high,
-    ttsEngine: TTSEngineEnum.kokoro,
+    ttsEngine: TTSEngineEnum.openaiEdgeTTS,
   });
 
   const [loading, setLoading] = useState(false);
@@ -366,8 +366,7 @@ const VideoCreator: React.FC = () => {
                   {ttsEngines.map((engine) => (
                     <MenuItem key={engine} value={engine}>
                       {engine === TTSEngineEnum.kokoro && "Kokoro (AI Voice)"}
-                      {engine === TTSEngineEnum.edgetts && "Edge TTS (Microsoft)"}
-                      {engine === TTSEngineEnum.streamlabspolly && "AWS Polly (Streamlabs)"}
+                      {engine === TTSEngineEnum.openaiEdgeTTS && "OpenAI Edge TTS"}
                     </MenuItem>
                   ))}
                 </Select>

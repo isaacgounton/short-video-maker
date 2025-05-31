@@ -153,8 +153,7 @@ export enum MusicVolumeEnum {
 
 export enum TTSEngineEnum {
   kokoro = "kokoro",
-  edgetts = "edge-tts", 
-  streamlabspolly = "streamlabs-polly",
+  openaiEdgeTTS = "openai-edge-tts",
 }
 
 export const renderConfig = z.object({
@@ -193,7 +192,7 @@ export const renderConfig = z.object({
   ttsEngine: z
     .nativeEnum(TTSEngineEnum)
     .optional()
-    .describe("TTS engine to use for speech generation, default is kokoro"),
+    .describe("TTS engine to use for speech generation, default is openai-edge-tts"),
 });
 export type RenderConfig = z.infer<typeof renderConfig>;
 
