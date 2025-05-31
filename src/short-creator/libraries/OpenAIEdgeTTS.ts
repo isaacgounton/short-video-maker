@@ -218,8 +218,11 @@ export class OpenAIEdgeTTS implements TTSService {
   }
 
   private validateVoice(voice: Voices): string {
+    logger.debug({ voice, availableVoices: this.cachedVoices.length }, "Validating voice");
+    
     // If voice is already a valid voice (including all Edge TTS voices), use it
     if (this.cachedVoices.includes(voice)) {
+      logger.debug({ voice }, "Voice found in cached voices");
       return voice;
     }
 
@@ -262,6 +265,7 @@ export class OpenAIEdgeTTS implements TTSService {
 
     // Check if we have a mapping for this voice
     if (voiceMappings[voice]) {
+      logger.debug({ voice, mappedVoice: voiceMappings[voice] }, "Found voice mapping");
       return voiceMappings[voice];
     }
 
@@ -273,16 +277,18 @@ export class OpenAIEdgeTTS implements TTSService {
     }
 
     // Default fallback
-    logger.warn({ voice }, "Unknown voice, using default 'en-US-AriaNeural'");
+    logger.warn({ voice, availableVoices: this.cachedVoices.slice(0, 10) }, "Unknown voice, using default 'en-US-AriaNeural'");
     return "en-US-AriaNeural";
   }
 
   private async callLocalTTSService(text: string, voice: string): Promise<ArrayBuffer> {
+    // Get the TTS service URL from environment or use default
+    // In Docker, use the service name 'edge-tts', otherwise fall back to localhost
+    const ttsServiceUrl = process.env?.OPENAI_EDGE_TTS_URL ||
+                         (process.env?.DOCKER === 'true' ? 'http://edge-tts:5050' : 'http://localhost:5050');
+    const apiKey = process.env?.DAHOPEVI_API_KEY || process.env?.API_KEY || 'your-api-key';
+    
     try {
-      // Get the TTS service URL from environment or use default
-      const ttsServiceUrl = process.env?.OPENAI_EDGE_TTS_URL || 'http://localhost:5050';
-      const apiKey = process.env?.DAHOPEVI_API_KEY || process.env?.API_KEY || 'your-api-key';
-      
       logger.debug({ ttsServiceUrl, voice }, "Calling local OpenAI Edge TTS service");
       
       const response = await fetch(`${ttsServiceUrl}/v1/audio/speech`, {
@@ -309,7 +315,18 @@ export class OpenAIEdgeTTS implements TTSService {
       
       return audioBuffer;
     } catch (error) {
-      logger.error("Error calling local TTS service:", error);
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+        ttsServiceUrl,
+        voice,
+        textLength: text.length
+      }, "Error calling local TTS service");
+      
+      // Provide more specific error information
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error(`Unable to connect to TTS service at ${ttsServiceUrl}. Please ensure the OpenAI Edge TTS service is running and accessible.`);
+      }
+      
       throw error;
     }
   }
@@ -367,8 +384,51 @@ export class OpenAIEdgeTTS implements TTSService {
     return [...this.cachedVoices];
   }
 
+  async testConnection(): Promise<boolean> {
+    const ttsServiceUrl = process.env?.OPENAI_EDGE_TTS_URL ||
+                         (process.env?.DOCKER === 'true' ? 'http://edge-tts:5050' : 'http://localhost:5050');
+    const apiKey = process.env?.DAHOPEVI_API_KEY || process.env?.API_KEY || 'your-api-key';
+    
+    try {
+      logger.debug({ ttsServiceUrl }, "Testing TTS service connection");
+      
+      const response = await fetch(`${ttsServiceUrl}/v1/voices`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
+
+      if (response.ok) {
+        logger.info({ ttsServiceUrl }, "TTS service connection successful");
+        return true;
+      } else {
+        logger.warn({
+          ttsServiceUrl,
+          status: response.status,
+          statusText: response.statusText
+        }, "TTS service connection failed");
+        return false;
+      }
+    } catch (error) {
+      logger.error({
+        ttsServiceUrl,
+        error: error instanceof Error ? error.message : String(error)
+      }, "TTS service connection test failed");
+      return false;
+    }
+  }
+
   static async init(): Promise<OpenAIEdgeTTS> {
     const instance = new OpenAIEdgeTTS();
+    
+    // Test connection to TTS service
+    const connectionTest = await instance.testConnection();
+    if (!connectionTest) {
+      logger.warn("OpenAI Edge TTS service connection test failed, but proceeding with initialization");
+    }
+    
     logger.info("OpenAI Edge TTS service initialized successfully");
     return instance;
   }
