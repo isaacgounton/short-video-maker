@@ -2,6 +2,9 @@ import { Voices } from "../../types/shorts";
 import { logger } from "../../config";
 import { TTSService } from "./TTSFactory";
 
+// Declare process global for Node.js environment
+declare const process: any;
+
 export class OpenAIEdgeTTS implements TTSService {
   private cachedVoices: string[] = [
     // OpenAI Edge TTS supported voices
@@ -28,17 +31,8 @@ export class OpenAIEdgeTTS implements TTSService {
       // Validate voice
       const selectedVoice = this.validateVoice(voice);
       
-      // Dynamic import to handle potential module loading issues
-      const { speak } = await import('openai-edge-tts');
-      
-      // Generate audio using openai-edge-tts
-      const audioData = await speak({
-        input: text,
-        voice: selectedVoice as any, // Cast to match the library's expected type
-      });
-
-      // Convert the audio data to ArrayBuffer
-      const audioBuffer = await this.convertToArrayBuffer(audioData);
+      // Call the local Python OpenAI Edge TTS service
+      const audioBuffer = await this.callLocalTTSService(text, selectedVoice);
       
       // Estimate audio duration (rough estimation based on text length)
       // This is a conservative estimate - actual duration will be determined by audio processing
@@ -112,6 +106,43 @@ export class OpenAIEdgeTTS implements TTSService {
     // Default fallback
     logger.warn({ voice }, "Unknown voice, using default 'alloy'");
     return "alloy";
+  }
+
+  private async callLocalTTSService(text: string, voice: string): Promise<ArrayBuffer> {
+    try {
+      // Get the TTS service URL from environment or use default
+      const ttsServiceUrl = process.env?.OPENAI_EDGE_TTS_URL || 'http://localhost:5050';
+      const apiKey = process.env?.DAHOPEVI_API_KEY || process.env?.API_KEY || 'your-api-key';
+      
+      logger.debug({ ttsServiceUrl, voice }, "Calling local OpenAI Edge TTS service");
+      
+      const response = await fetch(`${ttsServiceUrl}/v1/audio/speech`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          input: text,
+          voice: voice,
+          response_format: 'mp3',
+          speed: 1.0,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`TTS service responded with ${response.status}: ${errorText}`);
+      }
+
+      const audioBuffer = await response.arrayBuffer();
+      logger.debug({ audioSize: audioBuffer.byteLength }, "Audio generated successfully");
+      
+      return audioBuffer;
+    } catch (error) {
+      logger.error("Error calling local TTS service:", error);
+      throw error;
+    }
   }
 
   private async convertToArrayBuffer(audioData: any): Promise<ArrayBuffer> {
