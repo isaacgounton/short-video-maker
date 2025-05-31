@@ -7,13 +7,175 @@ declare const process: any;
 
 export class OpenAIEdgeTTS implements TTSService {
   private cachedVoices: string[] = [
-    // OpenAI Edge TTS supported voices
+    // OpenAI-style voices (for compatibility)
     "alloy",
     "echo",
     "fable",
     "onyx",
     "nova",
-    "shimmer"
+    "shimmer",
+    
+    // English (US) - Male & Female
+    "en-US-AriaNeural",      // Female
+    "en-US-JennyNeural",     // Female
+    "en-US-GuyNeural",       // Male
+    "en-US-DavisNeural",     // Male
+    "en-US-AmberNeural",     // Female
+    "en-US-AnaNeural",       // Female (Child)
+    "en-US-ChristopherNeural", // Male
+    "en-US-EricNeural",      // Male
+    "en-US-EmmaNeural",      // Female
+    "en-US-BrianNeural",     // Male
+    
+    // English (UK) - Male & Female
+    "en-GB-SoniaNeural",     // Female
+    "en-GB-RyanNeural",      // Male
+    "en-GB-LibbyNeural",     // Female
+    "en-GB-AbbiNeural",      // Female
+    "en-GB-AlfieNeural",     // Male
+    "en-GB-BellaNeural",     // Female
+    
+    // English (Australia) - Male & Female
+    "en-AU-NatashaNeural",   // Female
+    "en-AU-WilliamNeural",   // Male
+    "en-AU-AnnetteNeural",   // Female
+    "en-AU-CarlyNeural",     // Female
+    "en-AU-DarrenNeural",    // Male
+    "en-AU-DuncanNeural",    // Male
+    
+    // English (Canada) - Male & Female
+    "en-CA-ClaraNeural",     // Female
+    "en-CA-LiamNeural",      // Male
+    "en-CA-ClaraNeural",     // Female
+    
+    // French (France) - Male & Female
+    "fr-FR-DeniseNeural",    // Female
+    "fr-FR-HenriNeural",     // Male
+    "fr-FR-JeromeNeural",    // Male
+    "fr-FR-JosephineNeural", // Female
+    "fr-FR-BrigitteNeural",  // Female
+    "fr-FR-AlainNeural",     // Male
+    
+    // French (Canada) - Male & Female
+    "fr-CA-SylvieNeural",    // Female
+    "fr-CA-JeanNeural",      // Male
+    "fr-CA-AntoineNeural",   // Male
+    
+    // Spanish (Spain) - Male & Female
+    "es-ES-ElviraNeural",    // Female
+    "es-ES-AlvaroNeural",    // Male
+    "es-ES-AbrilNeural",     // Female
+    "es-ES-ArnauNeural",     // Male
+    "es-ES-DarioNeural",     // Male
+    "es-ES-EliasNeural",     // Male
+    
+    // Spanish (Mexico) - Male & Female
+    "es-MX-DaliaNeural",     // Female
+    "es-MX-JorgeNeural",     // Male
+    "es-MX-CandelaNeural",   // Female
+    "es-MX-CecilioNeural",   // Male
+    
+    // German (Germany) - Male & Female
+    "de-DE-KatjaNeural",     // Female
+    "de-DE-ConradNeural",    // Male
+    "de-DE-AmalaNeural",     // Female
+    "de-DE-BerndNeural",     // Male
+    "de-DE-ChristelNeural",  // Female
+    "de-DE-GiselaNeural",    // Female
+    
+    // German (Austria) - Male & Female
+    "de-AT-IngridNeural",    // Female
+    "de-AT-JonasNeural",     // Male
+    
+    // Italian - Male & Female
+    "it-IT-ElsaNeural",      // Female
+    "it-IT-IsabellaNeural",  // Female
+    "it-IT-DiegoNeural",     // Male
+    "it-IT-BenignoNeural",   // Male
+    "it-IT-CalimeroNeural",  // Male
+    "it-IT-CataldoNeural",   // Male
+    
+    // Portuguese (Brazil) - Male & Female
+    "pt-BR-FranciscaNeural", // Female
+    "pt-BR-AntonioNeural",   // Male
+    "pt-BR-BrendaNeural",    // Female
+    "pt-BR-DonatoNeural",    // Male
+    "pt-BR-ElzaNeural",      // Female
+    "pt-BR-FabioNeural",     // Male
+    
+    // Portuguese (Portugal) - Male & Female
+    "pt-PT-RaquelNeural",    // Female
+    "pt-PT-DuarteNeural",    // Male
+    "pt-PT-FernandaNeural",  // Female
+    
+    // Japanese - Male & Female
+    "ja-JP-NanamiNeural",    // Female
+    "ja-JP-KeitaNeural",     // Male
+    "ja-JP-AoiNeural",       // Female
+    "ja-JP-DaichiNeural",    // Male
+    "ja-JP-MayuNeural",      // Female
+    "ja-JP-NaokiNeural",     // Male
+    
+    // Chinese (Simplified) - Male & Female
+    "zh-CN-XiaoxiaoNeural", // Female
+    "zh-CN-YunxiNeural",    // Male
+    "zh-CN-YunyangNeural",  // Male
+    "zh-CN-XiaochenNeural", // Female
+    "zh-CN-XiaohanNeural",  // Female
+    "zh-CN-XiaomengNeural", // Female
+    
+    // Chinese (Traditional - Taiwan) - Male & Female
+    "zh-TW-HsiaoChenNeural", // Female
+    "zh-TW-YunJheNeural",    // Male
+    "zh-TW-HsiaoYuNeural",   // Female
+    
+    // Korean - Male & Female
+    "ko-KR-SunHiNeural",     // Female
+    "ko-KR-InJoonNeural",    // Male
+    "ko-KR-BongJinNeural",   // Male
+    "ko-KR-GookMinNeural",   // Male
+    
+    // Russian - Male & Female
+    "ru-RU-SvetlanaNeural",  // Female
+    "ru-RU-DmitryNeural",    // Male
+    "ru-RU-DariyaNeural",    // Female
+    
+    // Arabic (Saudi Arabia) - Male & Female
+    "ar-SA-ZariyahNeural",   // Female
+    "ar-SA-HamedNeural",     // Male
+    
+    // Arabic (Egypt) - Male & Female
+    "ar-EG-SalmaNeural",     // Female
+    "ar-EG-ShakirNeural",    // Male
+    
+    // Hindi (India) - Male & Female
+    "hi-IN-SwaraNeural",     // Female
+    "hi-IN-MadhurNeural",    // Male
+    "hi-IN-MadhurNeural",    // Male
+    
+    // Dutch (Netherlands) - Male & Female
+    "nl-NL-ColetteNeural",   // Female
+    "nl-NL-MaartenNeural",   // Male
+    "nl-NL-FennaNeural",     // Female
+    
+    // Swedish - Male & Female
+    "sv-SE-SofieNeural",     // Female
+    "sv-SE-MattiasNeural",   // Male
+    "sv-SE-HilleviNeural",   // Female
+    
+    // Norwegian - Male & Female
+    "nb-NO-IselinNeural",    // Female
+    "nb-NO-FinnNeural",      // Male
+    "nb-NO-PernilleNeural",  // Female
+    
+    // Danish - Male & Female
+    "da-DK-ChristelNeural",  // Female
+    "da-DK-JeppeNeural",     // Male
+    
+    // Finnish - Male & Female
+    "fi-FI-NooraNeural",     // Female
+    "fi-FI-HarriNeural",     // Male
+    "fi-FI-SelmaNeural",     // Female
   ];
 
   constructor() {}
@@ -56,46 +218,46 @@ export class OpenAIEdgeTTS implements TTSService {
   }
 
   private validateVoice(voice: Voices): string {
-    // If voice is already a valid OpenAI voice, use it
+    // If voice is already a valid voice (including all Edge TTS voices), use it
     if (this.cachedVoices.includes(voice)) {
       return voice;
     }
 
-    // Try to map some common voice names to OpenAI voices
+    // Try to map some common voice names to available voices
     const voiceMappings: Record<string, string> = {
-      // Female voices
-      "af_heart": "nova",
-      "af_alloy": "alloy", 
+      // Kokoro voice mappings to Edge TTS equivalents
+      "af_heart": "en-US-AriaNeural",
+      "af_alloy": "alloy",
       "af_nova": "nova",
-      "af_bella": "nova",
-      "af_jessica": "nova",
-      "af_sarah": "nova",
-      "bf_emma": "nova",
-      "bf_isabella": "nova",
-      "bf_alice": "nova",
-      "bf_lily": "nova",
+      "af_bella": "en-US-JennyNeural",
+      "af_jessica": "en-US-EmmaNeural",
+      "af_sarah": "en-US-AmberNeural",
+      "bf_emma": "en-GB-LibbyNeural",
+      "bf_isabella": "en-GB-SoniaNeural",
+      "bf_alice": "en-AU-NatashaNeural",
+      "bf_lily": "en-CA-ClaraNeural",
       
-      // Male voices  
-      "am_adam": "onyx",
+      // Male voice mappings
+      "am_adam": "en-US-GuyNeural",
       "am_echo": "echo",
-      "am_eric": "onyx",
-      "am_liam": "onyx",
-      "am_michael": "onyx",
+      "am_eric": "en-US-EricNeural",
+      "am_liam": "en-US-ChristopherNeural",
+      "am_michael": "en-US-BrianNeural",
       "am_onyx": "onyx",
-      "bm_george": "onyx",
-      "bm_lewis": "onyx",
-      "bm_daniel": "onyx",
+      "bm_george": "en-GB-RyanNeural",
+      "bm_lewis": "en-AU-WilliamNeural",
+      "bm_daniel": "en-CA-LiamNeural",
       "bm_fable": "fable",
       
       // Special voices
       "af_aoede": "shimmer",
-      "af_kore": "shimmer",
-      "af_nicole": "shimmer",
-      "af_river": "shimmer", 
-      "af_sky": "shimmer",
-      "am_fenrir": "echo",
-      "am_puck": "echo",
-      "am_santa": "echo",
+      "af_kore": "en-US-DavisNeural",
+      "af_nicole": "fr-FR-DeniseNeural",
+      "af_river": "es-ES-ElviraNeural",
+      "af_sky": "de-DE-KatjaNeural",
+      "am_fenrir": "de-DE-ConradNeural",
+      "am_puck": "fr-FR-HenriNeural",
+      "am_santa": "es-ES-AlvaroNeural",
     };
 
     // Check if we have a mapping for this voice
@@ -103,9 +265,16 @@ export class OpenAIEdgeTTS implements TTSService {
       return voiceMappings[voice];
     }
 
+    // If it's a direct Edge TTS voice name, use it as-is
+    // This allows users to specify voices like "en-US-AriaNeural" directly
+    if (voice.includes("-") && voice.includes("Neural")) {
+      logger.debug({ voice }, "Using direct Edge TTS voice");
+      return voice;
+    }
+
     // Default fallback
-    logger.warn({ voice }, "Unknown voice, using default 'alloy'");
-    return "alloy";
+    logger.warn({ voice }, "Unknown voice, using default 'en-US-AriaNeural'");
+    return "en-US-AriaNeural";
   }
 
   private async callLocalTTSService(text: string, voice: string): Promise<ArrayBuffer> {
