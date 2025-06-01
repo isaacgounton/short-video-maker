@@ -67,11 +67,26 @@ export class DahopeviWhisper implements IWhisper {
         }
       );
 
-      if (response.status !== 200) {
-        throw new Error(`Transcription request failed with status ${response.status}`);
+      // Handle both synchronous (200) and asynchronous (202) responses
+      if (response.status === 202) {
+        // Asynchronous processing - need to poll for results
+        const jobInfo = response.data;
+        logger.debug({ jobInfo }, "Received 202 response for transcription");
+        
+        // The job_id might be directly in the response or nested
+        const jobId = jobInfo.job_id || jobInfo.id || jobInfo.jobId;
+        if (jobId) {
+          logger.info({ jobId }, "Transcription job submitted, polling for results");
+          const assContent = await this.pollForTranscriptionResult(jobId);
+          return assContent;
+        } else {
+          throw new Error(`Received 202 but no job_id found in response: ${JSON.stringify(jobInfo)}`);
+        }
+      } else if (response.status !== 200) {
+        throw new Error(`Transcription request failed with status ${response.status}: ${JSON.stringify(response.data)}`);
       }
 
-      // The response should be the ASS content or a URL to download it
+      // Synchronous response (200) - process immediately
       let assContent = response.data;
       
       // Handle different response formats from dahopevi API
@@ -103,6 +118,64 @@ export class DahopeviWhisper implements IWhisper {
       logger.error({ error: errorMessage }, "Error during Dahopevi transcription");
       throw error;
     }
+  }
+
+  private async pollForTranscriptionResult(jobId: string, maxAttempts: number = 60): Promise<string> {
+    // Poll the job status endpoint until completion (max 5 minutes with 5s intervals)
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const statusResponse = await axios.post(
+          `${this.baseUrl}/v1/toolkit/job/status`,
+          {
+            job_id: jobId
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(this.apiKey && { "x-api-key": this.apiKey })
+            },
+            timeout: 10000 // 10 second timeout for status checks
+          }
+        );
+
+        const jobStatus = statusResponse.data;
+        logger.debug({ jobId, attempt, jobStatus }, "Polling transcription job status");
+
+        // Check if job is completed based on the response structure
+        if (jobStatus.job_status === 'done' && jobStatus.response) {
+          logger.info({ jobId, attempts: attempt }, "Transcription job completed successfully");
+          
+          // The result should be in jobStatus.response.response
+          let result = jobStatus.response.response;
+          if (typeof result === 'string' && result.startsWith('http')) {
+            // It's a URL, download the content
+            const downloadResponse = await axios.get(result);
+            result = downloadResponse.data;
+          }
+          
+          return typeof result === 'string' ? result : JSON.stringify(result);
+        } else if (jobStatus.job_status === 'failed') {
+          throw new Error(`Transcription job failed: ${jobStatus.error || 'Unknown error'}`);
+        }
+
+        // Still processing, wait before next poll
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.warn({ jobId, attempt, error: errorMessage }, "Error polling transcription job status");
+        
+        if (attempt >= maxAttempts) {
+          throw new Error(`Failed to get transcription result after ${maxAttempts} attempts: ${errorMessage}`);
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
+
+    throw new Error(`Transcription job polling timed out after ${maxAttempts} attempts (${maxAttempts * 5} seconds)`);
   }
 
   private async uploadAudioFile(audioPath: string): Promise<string> {
