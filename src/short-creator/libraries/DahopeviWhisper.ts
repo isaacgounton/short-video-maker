@@ -192,26 +192,64 @@ export class DahopeviWhisper implements IWhisper {
 
         const jobStatus = statusResponse.data;
         
-        // Only log polling every 30 attempts (2.5 minutes) to reduce noise
+        // Log polling progress and job status structure for debugging
         if (attempt % 30 === 0) {
-          logger.info({ jobId, attempt, status: jobStatus.job_status }, "Still waiting for transcription...");
+          logger.info({
+            jobId,
+            attempt,
+            status: jobStatus.job_status || jobStatus.status,
+            hasResponse: !!jobStatus.response,
+            responseKeys: jobStatus.response ? Object.keys(jobStatus.response) : [],
+            fullStatus: jobStatus
+          }, "Still waiting for transcription...");
         }
 
         // Check if job is completed based on the response structure
-        if (jobStatus.job_status === 'done' && jobStatus.response) {
+        // Handle both direct job status and nested response formats
+        const status = jobStatus.job_status || jobStatus.status;
+        
+        if (status === 'done' || status === 'completed') {
           logger.info({ jobId, attempts: attempt }, "Transcription job completed successfully");
           
-          // The result should be in jobStatus.response.response
-          let result = jobStatus.response.response;
+          // Try multiple paths to find the result
+          let result = null;
+          
+          // Path 1: jobStatus.response.response (nested response)
+          if (jobStatus.response && jobStatus.response.response) {
+            result = jobStatus.response.response;
+          }
+          // Path 2: jobStatus.response.result (alternative nested path)
+          else if (jobStatus.response && jobStatus.response.result) {
+            result = jobStatus.response.result;
+          }
+          // Path 3: jobStatus.response (direct response)
+          else if (jobStatus.response && typeof jobStatus.response === 'string') {
+            result = jobStatus.response;
+          }
+          // Path 4: jobStatus.result (direct result)
+          else if (jobStatus.result) {
+            result = jobStatus.result;
+          }
+          
+          if (!result) {
+            throw new Error(`Transcription completed but no result found in response: ${JSON.stringify(jobStatus)}`);
+          }
+          
+          // If result is a URL, download the content
           if (typeof result === 'string' && result.startsWith('http')) {
-            // It's a URL, download the content
-            const downloadResponse = await axios.get(result);
-            result = downloadResponse.data;
+            try {
+              const downloadResponse = await axios.get(result);
+              result = downloadResponse.data;
+            } catch (downloadError) {
+              logger.error({ jobId, result, error: downloadError }, "Failed to download result from URL");
+              throw new Error(`Failed to download transcription result: ${downloadError}`);
+            }
           }
           
           return typeof result === 'string' ? result : JSON.stringify(result);
-        } else if (jobStatus.job_status === 'failed') {
-          throw new Error(`Transcription job failed: ${jobStatus.error || 'Unknown error'}`);
+        } else if (status === 'failed' || status === 'error') {
+          const errorMsg = jobStatus.error || jobStatus.message || 'Unknown error';
+          throw new Error(`Transcription job failed: ${errorMsg}`);
         }
 
         // Still processing, wait before next poll
