@@ -19,6 +19,13 @@ export class DahopeviWhisper implements IWhisper {
     this.baseUrl = process.env.DAHOPEVI_BASE_URL || "http://api:8080";
     // Use API_KEY for local dahopevi container (matches config.py)
     this.apiKey = process.env.API_KEY || process.env.DAHOPEVI_API_KEY || "";
+    
+    // Log the configuration for debugging
+    logger.info({
+      baseUrl: this.baseUrl,
+      hasApiKey: !!this.apiKey,
+      envDahopeviBaseUrl: process.env.DAHOPEVI_BASE_URL
+    }, "DahopeviWhisper configuration");
   }
 
   static async init(config: Config): Promise<DahopeviWhisper> {
@@ -45,27 +52,68 @@ export class DahopeviWhisper implements IWhisper {
     }
   }
 
+  private async makeTranscriptionRequest(uploadUrl: string, maxRetries: number = 3): Promise<any> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        logger.info({
+          attempt,
+          maxRetries,
+          baseUrl: this.baseUrl,
+          uploadUrl
+        }, "Attempting transcription request");
+        
+        const response = await axios.post(
+          `${this.baseUrl}/transcribe-media`,
+          {
+            media_url: uploadUrl,
+            output: "ass", // Use ASS format to get word-level timestamps
+            max_chars: 56
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(this.apiKey && { "x-api-key": this.apiKey })
+            },
+            timeout: 300000 // 5 minutes timeout
+          }
+        );
+        
+        return response; // Success - return the response
+        
+      } catch (error: unknown) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Exponential backoff, max 10s
+          logger.warn({
+            attempt,
+            maxRetries,
+            error: lastError.message,
+            retryDelay: delay
+          }, "Transcription request failed, retrying");
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          logger.error({
+            attempts: maxRetries,
+            error: lastError.message
+          }, "All transcription attempts failed");
+        }
+      }
+    }
+    
+    throw lastError || new Error("Unknown error during transcription");
+  }
+
   private async transcribeAudio(audioPath: string): Promise<string> {
     try {
       // First, upload the audio file to get a URL
       const uploadUrl = await this.uploadAudioFile(audioPath);
       
       // Then request transcription with ASS format for word-level timestamps
-      const response = await axios.post(
-        `${this.baseUrl}/transcribe-media`,
-        {
-          media_url: uploadUrl,
-          output: "ass", // Use ASS format to get word-level timestamps
-          max_chars: 56
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            ...(this.apiKey && { "x-api-key": this.apiKey })
-          },
-          timeout: 300000 // 5 minutes timeout
-        }
-      );
+      const response = await this.makeTranscriptionRequest(uploadUrl);
 
       // Handle both synchronous (200) and asynchronous (202) responses
       if (response.status === 202) {
