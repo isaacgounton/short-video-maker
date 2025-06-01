@@ -16,7 +16,7 @@ export class DahopeviWhisper implements IWhisper {
   constructor(private config: Config) {
     // For Whisper, always use local dahopevi container since external API can't access container files
     // TTS can continue using external API since it doesn't need file uploads
-    this.baseUrl = "http://dahopevi:8080";
+    this.baseUrl = process.env.DAHOPEVI_BASE_URL || "http://api:8080";
     // Use API_KEY for local dahopevi container (matches config.py)
     this.apiKey = process.env.API_KEY || process.env.DAHOPEVI_API_KEY || "";
   }
@@ -113,16 +113,16 @@ export class DahopeviWhisper implements IWhisper {
     const fileName = path.basename(audioPath);
     
     // Check if we're using local dahopevi (container network) or external API
-    if (this.baseUrl.includes('localhost') || this.baseUrl.includes('dahopevi:')) {
-      // Local container network
-      const fileUrl = `http://short-video-maker:3123/api/tmp/${fileName}`;
+    if (this.baseUrl.includes('localhost') || this.baseUrl.includes('api:')) {
+      // Local container network - use the correct service name
+      const fileUrl = `http://short-creator:3123/api/tmp/${fileName}`;
       logger.debug({ audioPath, fileUrl }, "Audio file accessible via local container network");
       return fileUrl;
     } else {
       // External API - need to provide a publicly accessible URL
       // For now, we'll try the container approach and let the API handle it
       // In production, you might want to upload to a cloud storage service
-      const fileUrl = `http://short-video-maker:3123/api/tmp/${fileName}`;
+      const fileUrl = `http://short-creator:3123/api/tmp/${fileName}`;
       logger.debug({ audioPath, fileUrl }, "Audio file URL for external API (may need public access)");
       return fileUrl;
     }
