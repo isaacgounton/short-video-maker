@@ -53,3 +53,9 @@ docker-compose*
 .prettierrc
 .eslintrc*
 tsconfig.tsbuildinfo
+
+# Additional build optimization
+data/temp/
+data/videos/
+storage/
+.git/

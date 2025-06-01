@@ -1,20 +1,20 @@
+# Use pre-built whisper.cpp binaries instead of compiling from source
 FROM ubuntu:22.04 AS install-whisper
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt update
-# whisper install dependencies
-RUN apt install -y \
-    git \
-    build-essential \
+RUN apt update && apt install -y \
     wget \
-    cmake \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /whisper
-RUN git clone https://github.com/ggml-org/whisper.cpp.git .
-RUN git checkout v1.7.1
-RUN make
-WORKDIR /whisper/models
-RUN sh ./download-ggml-model.sh base.en
+# Download pre-built whisper.cpp binaries (much faster than compiling)
+RUN wget -q https://github.com/ggml-org/whisper.cpp/releases/download/v1.7.1/whisper-v1.7.1-bin-ubuntu-x64.tar.gz && \
+    tar -xzf whisper-v1.7.1-bin-ubuntu-x64.tar.gz && \
+    rm whisper-v1.7.1-bin-ubuntu-x64.tar.gz
+    
+# Download only the base model we need
+RUN mkdir -p models && cd models && \
+    wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
 
 FROM node:22-bookworm-slim AS base
 ENV DEBIAN_FRONTEND=noninteractive
