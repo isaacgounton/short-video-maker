@@ -356,12 +356,11 @@ export class ShortCreator {
     // Fast fallback method that doesn't trigger service initialization
     const fallbackVoices: { [key: string]: string[] } = {
       kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
-      "edge-tts": [
+      "openai-edge-tts": [
         "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural",
-        "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "es-ES-ElviraNeural",
-        "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
-      ],
-      "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
+        "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "fr-CA-JeanNeural", "fr-CA-SylvieNeural",
+        "es-ES-ElviraNeural", "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
+      ]
     };
     
     return fallbackVoices[engine] || [];
@@ -371,12 +370,11 @@ export class ShortCreator {
     // Fast fallback method that doesn't trigger service initialization
     return {
       kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
-      "edge-tts": [
+      "openai-edge-tts": [
         "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural",
-        "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "es-ES-ElviraNeural",
-        "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
-      ],
-      "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
+        "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "fr-CA-JeanNeural", "fr-CA-SylvieNeural",
+        "es-ES-ElviraNeural", "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
+      ]
     };
   }
 

@@ -60,7 +60,7 @@ export class MCPRouter {
             name: "list-voices-for-engine",
             description: "List available voices for a specific TTS engine",
             parameters: {
-              engine: "TTS engine name (kokoro, edge-tts, streamlabs-polly)"
+              engine: "TTS engine name (kokoro, openai-edge-tts)"
             }
           },
           {
@@ -177,7 +177,7 @@ export class MCPRouter {
       "list-voices-for-engine",
       "List available voices for a specific TTS engine (uses cached/fallback voices for speed)",
       {
-        engine: z.enum(["kokoro", "edge-tts", "streamlabs-polly"]).describe("TTS engine name"),
+        engine: z.enum(["kokoro", "openai-edge-tts"]).describe("TTS engine name"),
       },
       async ({ engine }) => {
         // Use the fast method that doesn't trigger service initialization
@@ -222,7 +222,7 @@ export class MCPRouter {
           };
         } catch (error) {
           // Fallback to basic engine list
-          const fallbackEngines = ["kokoro", "edge-tts", "streamlabs-polly"];
+          const fallbackEngines = ["kokoro", "openai-edge-tts"];
           
           return {
             content: [
@@ -332,40 +332,38 @@ export class MCPRouter {
         const voiceExamples = {
           "English": {
             "kokoro": ["af_heart", "am_adam", "bm_lewis", "bf_emma"],
-            "edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "en-GB-SoniaNeural", "en-CA-ClaraNeural"],
-            "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian"]
+            "openai-edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "en-GB-SoniaNeural", "en-CA-ClaraNeural"]
           },
           "French": {
-            "edge-tts": ["fr-FR-DeniseNeural", "fr-FR-HenriNeural", "fr-CA-AntoineNeural", "fr-CA-SylvieNeural"],
-            "note": "Use edge-tts for French voices. DO NOT use fr-FR-Standard-A (that's Google Cloud format)"
+            "openai-edge-tts": ["fr-FR-DeniseNeural", "fr-FR-HenriNeural", "fr-CA-AntoineNeural", "fr-CA-JeanNeural", "fr-CA-SylvieNeural"],
+            "note": "Use openai-edge-tts for French voices. fr-CA-JeanNeural is recommended for French-Canadian content. DO NOT use fr-FR-Standard-A (that's Google Cloud format)"
           },
           "Spanish": {
-            "edge-tts": ["es-ES-ElviraNeural", "es-ES-AlvaroNeural", "es-MX-DaliaNeural", "es-MX-JorgeNeural"]
+            "openai-edge-tts": ["es-ES-ElviraNeural", "es-ES-AlvaroNeural", "es-MX-DaliaNeural", "es-MX-JorgeNeural"]
           },
           "German": {
-            "edge-tts": ["de-DE-KatjaNeural", "de-DE-ConradNeural", "de-AT-IngridNeural"]
+            "openai-edge-tts": ["de-DE-KatjaNeural", "de-DE-ConradNeural", "de-AT-IngridNeural"]
           },
           "Italian": {
-            "edge-tts": ["it-IT-ElsaNeural", "it-IT-IsabellaNeural", "it-IT-DiegoNeural"]
+            "openai-edge-tts": ["it-IT-ElsaNeural", "it-IT-IsabellaNeural", "it-IT-DiegoNeural"]
           },
           "Portuguese": {
-            "edge-tts": ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural", "pt-PT-RaquelNeural"]
+            "openai-edge-tts": ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural", "pt-PT-RaquelNeural"]
           },
           "Japanese": {
-            "edge-tts": ["ja-JP-NanamiNeural", "ja-JP-KeitaNeural", "ja-JP-AoiNeural"]
+            "openai-edge-tts": ["ja-JP-NanamiNeural", "ja-JP-KeitaNeural", "ja-JP-AoiNeural"]
           },
           "Chinese": {
-            "edge-tts": ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-TW-HsiaoChenNeural"]
+            "openai-edge-tts": ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-TW-HsiaoChenNeural"]
           },
           "Arabic": {
-            "edge-tts": ["ar-SA-ZariyahNeural", "ar-SA-HamedNeural", "ar-EG-ShakirNeural"]
+            "openai-edge-tts": ["ar-SA-ZariyahNeural", "ar-SA-HamedNeural", "ar-EG-ShakirNeural"]
           },
           "IMPORTANT_NOTES": {
             "voice_format_warning": "Each TTS engine uses different voice naming formats!",
             "kokoro": "Uses internal names like af_heart, am_adam",
-            "edge-tts": "Uses Microsoft format like en-US-AriaNeural, fr-FR-DeniseNeural", 
-            "streamlabs-polly": "Uses Amazon Polly names like Joanna, Matthew",
-            "common_mistake": "Do NOT mix voice formats! fr-FR-Standard-A is Google Cloud format and will fail with edge-tts"
+            "openai-edge-tts": "Uses Microsoft Edge TTS format like en-US-AriaNeural, fr-FR-DeniseNeural",
+            "common_mistake": "Do NOT mix voice formats! fr-FR-Standard-A is Google Cloud format and will fail with openai-edge-tts"
           }
         };
         
