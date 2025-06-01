@@ -57,12 +57,17 @@ export class DahopeviWhisper implements IWhisper {
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        logger.info({
-          attempt,
-          maxRetries,
-          baseUrl: this.baseUrl,
-          uploadUrl
-        }, "Attempting transcription request");
+        if (attempt === 1) {
+          logger.info({
+            baseUrl: this.baseUrl,
+            uploadUrl
+          }, "Starting transcription request");
+        } else {
+          logger.debug({
+            attempt,
+            maxRetries
+          }, "Retrying transcription request");
+        }
         
         const response = await axios.post(
           `${this.baseUrl}/transcribe-media`,
@@ -187,9 +192,9 @@ export class DahopeviWhisper implements IWhisper {
 
         const jobStatus = statusResponse.data;
         
-        // Log polling progress less frequently to reduce noise
-        if (attempt % 6 === 0) { // Log every 30 seconds (6 attempts * 5 second intervals)
-          logger.info({ jobId, attempt, status: jobStatus.job_status }, "Polling transcription job status");
+        // Only log polling every 30 attempts (2.5 minutes) to reduce noise
+        if (attempt % 30 === 0) {
+          logger.info({ jobId, attempt, status: jobStatus.job_status }, "Still waiting for transcription...");
         }
 
         // Check if job is completed based on the response structure
