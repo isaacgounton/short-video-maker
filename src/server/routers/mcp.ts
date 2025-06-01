@@ -53,19 +53,7 @@ export class MCPRouter {
           },
           {
             name: "list-available-voices",
-            description: "List all available TTS voices for all engines",
-            parameters: {}
-          },
-          {
-            name: "list-voices-for-engine",
-            description: "List available voices for a specific TTS engine",
-            parameters: {
-              engine: "TTS engine name (kokoro, openai-edge-tts)"
-            }
-          },
-          {
-            name: "list-tts-engines",
-            description: "List all available TTS engines",
+            description: "List all available OpenAI Edge TTS voices",
             parameters: {}
           },
           {
@@ -95,7 +83,7 @@ export class MCPRouter {
           },
           {
             name: "get-voice-examples",
-            description: "Get example voices for different languages and TTS engines",
+            description: "Get example voices for different languages using OpenAI Edge TTS",
             parameters: {}
           }
         ];
@@ -151,91 +139,23 @@ export class MCPRouter {
       },
     );
 
-    this.mcpServer.tool(
-      "list-available-voices",
-      "List all available TTS voices for all engines (uses cached/fallback voices for speed)",
+    this.mcpServer.tool(      "list-available-voices",
+      "List all available voices",
       {},
       async () => {
-        // Use the fast method that doesn't trigger service initialization
-        const voices = this.shortCreator.ListAllAvailableVoicesFast();
+        const voices = this.shortCreator.ListAvailableVoices();
         
         return {
           content: [
             {
             type: "text",
             text: JSON.stringify({
-              ...voices,
-              note: "Fast fallback voices - all engines available"
+              voices,
+              note: "Using Azure TTS voices (format: [language-region]-[VoiceName]Neural, e.g., en-US-AriaNeural)"
             }, null, 2)
             },
           ],
         };
-      },
-    );
-
-    this.mcpServer.tool(
-      "list-voices-for-engine",
-      "List available voices for a specific TTS engine (uses cached/fallback voices for speed)",
-      {
-        engine: z.enum(["kokoro", "openai-edge-tts"]).describe("TTS engine name"),
-      },
-      async ({ engine }) => {
-        // Use the fast method that doesn't trigger service initialization
-        const voices = this.shortCreator.ListAvailableVoicesForEngineFast(engine as any);
-        
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({
-                engine,
-                voices,
-                note: "Fast fallback voices - no API calls required"
-              }, null, 2)
-            },
-          ],
-        };
-      },
-    );
-
-    this.mcpServer.tool(
-      "list-tts-engines",
-      "List all available TTS engines",
-      {},
-      async () => {
-        try {
-          // Use a timeout to prevent hanging
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("Timeout")), 3000);
-          });
-          
-          const enginesPromise = this.shortCreator.ListAvailableTTSEngines();
-          const engines = await Promise.race([enginesPromise, timeoutPromise]);
-          
-          return {
-            content: [
-              {
-              type: "text",
-              text: JSON.stringify({ engines }, null, 2)
-              },
-            ],
-          };
-        } catch (error) {
-          // Fallback to basic engine list
-          const fallbackEngines = ["kokoro", "openai-edge-tts"];
-          
-          return {
-            content: [
-              {
-              type: "text",
-              text: JSON.stringify({ 
-                engines: fallbackEngines,
-                note: "Fallback engines listed due to API timeout"
-              }, null, 2)
-              },
-            ],
-          };
-        }
       },
     );
 
@@ -324,46 +244,24 @@ export class MCPRouter {
       },
     );
 
-    this.mcpServer.tool(
-      "get-voice-examples",
-      "Get example voices for different languages and TTS engines",
+    this.mcpServer.tool(      "get-voice-examples",
+      "Get example voices for different languages",
       {},
       async () => {
         const voiceExamples = {
-          "English": {
-            "kokoro": ["af_heart", "am_adam", "bm_lewis", "bf_emma"],
-            "openai-edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "en-GB-SoniaNeural", "en-CA-ClaraNeural"]
-          },
-          "French": {
-            "openai-edge-tts": ["fr-FR-DeniseNeural", "fr-FR-HenriNeural", "fr-CA-AntoineNeural", "fr-CA-JeanNeural", "fr-CA-SylvieNeural"],
-            "note": "Use openai-edge-tts for French voices. fr-CA-JeanNeural is recommended for French-Canadian content. DO NOT use fr-FR-Standard-A (that's Google Cloud format)"
-          },
-          "Spanish": {
-            "openai-edge-tts": ["es-ES-ElviraNeural", "es-ES-AlvaroNeural", "es-MX-DaliaNeural", "es-MX-JorgeNeural"]
-          },
-          "German": {
-            "openai-edge-tts": ["de-DE-KatjaNeural", "de-DE-ConradNeural", "de-AT-IngridNeural"]
-          },
-          "Italian": {
-            "openai-edge-tts": ["it-IT-ElsaNeural", "it-IT-IsabellaNeural", "it-IT-DiegoNeural"]
-          },
-          "Portuguese": {
-            "openai-edge-tts": ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural", "pt-PT-RaquelNeural"]
-          },
-          "Japanese": {
-            "openai-edge-tts": ["ja-JP-NanamiNeural", "ja-JP-KeitaNeural", "ja-JP-AoiNeural"]
-          },
-          "Chinese": {
-            "openai-edge-tts": ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-TW-HsiaoChenNeural"]
-          },
-          "Arabic": {
-            "openai-edge-tts": ["ar-SA-ZariyahNeural", "ar-SA-HamedNeural", "ar-EG-ShakirNeural"]
-          },
-          "IMPORTANT_NOTES": {
-            "voice_format_warning": "Each TTS engine uses different voice naming formats!",
-            "kokoro": "Uses internal names like af_heart, am_adam",
-            "openai-edge-tts": "Uses Microsoft Edge TTS format like en-US-AriaNeural, fr-FR-DeniseNeural",
-            "common_mistake": "Do NOT mix voice formats! fr-FR-Standard-A is Google Cloud format and will fail with openai-edge-tts"
+          "Language Examples": {
+            "voices": {
+              "English (US)": ["en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural"],
+              "French": ["fr-FR-DeniseNeural", "fr-FR-HenriNeural", "fr-CA-JeanNeural"],
+              "Spanish": ["es-ES-ElviraNeural", "es-ES-AlvaroNeural", "es-MX-DaliaNeural"],
+              "German": ["de-DE-KatjaNeural", "de-DE-ConradNeural"],
+              "Italian": ["it-IT-ElsaNeural", "it-IT-DiegoNeural"],
+              "Japanese": ["ja-JP-NanamiNeural", "ja-JP-KeitaNeural"],
+              "Chinese": ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural"],
+              "Arabic": ["ar-SA-ZariyahNeural", "ar-SA-HamedNeural"]
+            },
+            "recommended": "en-US-AriaNeural",
+            "note": "All voices in [language-region]-[VoiceName]Neural format"
           }
         };
         

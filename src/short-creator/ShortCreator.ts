@@ -6,7 +6,7 @@ import path from "path";
 import https from "https";
 import http from "http";
 
-import { Kokoro } from "./libraries/Kokoro";
+
 import { TTSFactory, TTSService } from "./libraries/TTSFactory";
 import { Remotion } from "./libraries/Remotion";
 import { IWhisper } from "./libraries/IWhisper";
@@ -24,7 +24,7 @@ import type {
   MusicTag,
   MusicForVideo,
 } from "../types/shorts";
-import { TTSEngineEnum } from "../types/shorts";
+// No longer importing TTSEngineEnum as we've removed it
 
 export class ShortCreator {
   private queue: {
@@ -37,7 +37,7 @@ export class ShortCreator {
   constructor(
     private config: Config,
     private remotion: Remotion,
-    private kokoro: Kokoro,
+
     private whisper: IWhisper,
     private ffmpeg: FFMpeg,
     private pexelsApi: PexelsAPI,
@@ -131,14 +131,15 @@ export class ShortCreator {
       config.orientation || OrientationEnum.portrait;
 
     // Get the TTS service based on the selected engine
-    const ttsEngine = config.ttsEngine || TTSEngineEnum.kokoro;
+    // Always using openai-edge-tts now
+    const ttsEngine = 'openai-edge-tts';
     const ttsService = await TTSFactory.getTTSService(ttsEngine);
     
     let index = 0;
     for (const scene of inputScenes) {
       const audio = await ttsService.generate(
         scene.text,
-        config.voice ?? "af_heart",
+        config.voice ?? "en-US-AriaNeural",
       );
       let { audioLength } = audio;
       const { audio: audioStream } = audio;
@@ -335,16 +336,21 @@ export class ShortCreator {
   }
 
   public ListAvailableVoices(): string[] {
-    return this.kokoro.listAvailableVoices();
+    // Return fallback voices since we removed Kokoro
+    return [
+      "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural",
+      "en-US-AvaNeural", "en-US-AndrewNeural", "en-US-EmmaNeural",
+      "en-US-BrianNeural", "en-US-ChristopherNeural", "en-US-EricNeural",
+      "en-US-MichelleNeural", "en-US-RogerNeural", "en-US-SteffanNeural"
+    ];
+  }
+  public async ListAvailableTTSEngines(): Promise<string[]> {
+    return ['openai-edge-tts'];
   }
 
-  public async ListAvailableTTSEngines(): Promise<TTSEngineEnum[]> {
-    return Object.values(TTSEngineEnum);
-  }
-
-  public async ListAvailableVoicesForEngine(engine: TTSEngineEnum): Promise<string[]> {
+  public async ListAvailableVoicesForEngine(engine: string): Promise<string[]> {
     try {
-      const ttsService = await TTSFactory.getTTSService(engine);
+      const ttsService = await TTSFactory.getTTSService('openai-edge-tts');
       return ttsService.listAvailableVoices();
     } catch (error) {
       logger.error({ engine, error }, "Failed to get voices for TTS engine");
@@ -352,10 +358,10 @@ export class ShortCreator {
     }
   }
 
-  public ListAvailableVoicesForEngineFast(engine: TTSEngineEnum): string[] {
+  public ListAvailableVoicesForEngineFast(engine: string): string[] {
     // Fast fallback method that doesn't trigger service initialization
     const fallbackVoices: { [key: string]: string[] } = {
-      kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
+
       "openai-edge-tts": [
         "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural",
         "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "fr-CA-JeanNeural", "fr-CA-SylvieNeural",
@@ -369,7 +375,7 @@ export class ShortCreator {
   public ListAllAvailableVoicesFast(): Record<string, string[]> {
     // Fast fallback method that doesn't trigger service initialization
     return {
-      kokoro: ["af_heart", "af_alloy", "af_nova", "am_adam", "am_echo", "bm_lewis", "bf_emma"],
+
       "openai-edge-tts": [
         "en-US-AriaNeural", "en-US-JennyNeural", "en-US-GuyNeural",
         "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "fr-CA-JeanNeural", "fr-CA-SylvieNeural",

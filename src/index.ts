@@ -2,7 +2,7 @@
 import path from "path";
 import fs from "fs-extra";
 
-import { Kokoro } from "./short-creator/libraries/Kokoro";
+
 import { Remotion } from "./short-creator/libraries/Remotion";
 import { Whisper } from "./short-creator/libraries/Whisper";
 import { DahopeviWhisper } from "./short-creator/libraries/DahopeviWhisper";
@@ -34,8 +34,8 @@ async function main() {
 
   logger.debug("initializing remotion");
   const remotion = await Remotion.init(config);
-  logger.debug("initializing kokoro");
-  const kokoro = await Kokoro.init(config.kokoroModelPrecision);
+
+
   logger.debug("initializing whisper");
   // Use DahopeviWhisper if we have DAHOPEVI_BASE_URL set (external or local API)
   // Use local Whisper only if no dahopevi API is configured
@@ -50,7 +50,7 @@ async function main() {
   const shortCreator = new ShortCreator(
     config,
     remotion,
-    kokoro,
+
     whisper,
     ffmpeg,
     pexelsApi,
@@ -66,8 +66,8 @@ async function main() {
         "testing if the installation was successful - this may take a while...",
       );
       try {
-        const audioBuffer = (await kokoro.generate("hi", "af_heart")).audio;
-        await ffmpeg.createMp3DataUri(audioBuffer);
+        // Test basic functionality without TTS
+        // Skip TTS test since we removed Kokoro
         await pexelsApi.findVideo(["dog"], 2.4);
         const testVideoPath = path.join(config.tempDirPath, "test.mp4");
         await remotion.testRender(testVideoPath);

@@ -3,7 +3,7 @@ import "dotenv/config";
 import os from "os";
 import fs from "fs-extra";
 import pino from "pino";
-import { kokoroModelPrecision, whisperModels } from "./types/shorts";
+import { whisperModels } from "./types/shorts";
 
 const defaultLogLevel: pino.Level = "info";
 const defaultPort = 3123;
@@ -45,7 +45,6 @@ export class Config {
   public devMode: boolean;
   public whisperVersion: string = whisperVersion;
   public whisperModel: whisperModels = defaultWhisperModel;
-  public kokoroModelPrecision: kokoroModelPrecision = "fp32";
 
   // docker-specific, performance-related settings to prevent memory issues
   public concurrency?: number;
@@ -93,10 +92,6 @@ export class Config {
     if (process.env.WHISPER_MODEL) {
       this.whisperModel = process.env.WHISPER_MODEL as whisperModels;
     }
-    if (process.env.KOKORO_MODEL_PRECISION) {
-      this.kokoroModelPrecision = process.env
-        .KOKORO_MODEL_PRECISION as kokoroModelPrecision;
-    }
 
     this.concurrency = process.env.CONCURRENCY
       ? parseInt(process.env.CONCURRENCY)
@@ -117,5 +112,3 @@ export class Config {
     }
   }
 }
-
-export const KOKORO_MODEL = "onnx-community/Kokoro-82M-v1.0-ONNX";

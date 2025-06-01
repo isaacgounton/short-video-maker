@@ -28,7 +28,6 @@ import {
   VoiceEnum,
   OrientationEnum,
   MusicVolumeEnum,
-  TTSEngineEnum,
 } from "../../types/shorts";
 
 interface SceneFormData {
@@ -46,37 +45,27 @@ const VideoCreator: React.FC = () => {
     music: MusicMoodEnum.chill,
     captionPosition: CaptionPositionEnum.bottom,
     captionBackgroundColor: "blue",
-    voice: "alloy", // Default OpenAI Edge TTS voice
+    voice: "en-US-AriaNeural", // Default OpenAI Edge TTS voice
     orientation: OrientationEnum.portrait,
     musicVolume: MusicVolumeEnum.high,
-    ttsEngine: TTSEngineEnum.openaiEdgeTTS,
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voices, setVoices] = useState<VoiceEnum[]>([]);
   const [musicTags, setMusicTags] = useState<MusicMoodEnum[]>([]);
-  const [ttsEngines, setTtsEngines] = useState<TTSEngineEnum[]>([]);
-  const [voicesForEngine, setVoicesForEngine] = useState<Record<string, VoiceEnum[]>>({});
   const [loadingOptions, setLoadingOptions] = useState(true);
-  const [loadingVoices, setLoadingVoices] = useState(false);
 
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [voicesResponse, musicResponse, ttsEnginesResponse] = await Promise.all([
+        const [voicesResponse, musicResponse] = await Promise.all([
           axios.get("/api/voices"),
           axios.get("/api/music-tags"),
-          axios.get("/api/tts-engines"),
         ]);
 
         setVoices(voicesResponse.data);
         setMusicTags(musicResponse.data);
-        setTtsEngines(ttsEnginesResponse.data.engines);
-        
-        // Load voices for all engines
-        const allVoicesResponse = await axios.get("/api/tts-voices");
-        setVoicesForEngine(allVoicesResponse.data.voices);
       } catch (err) {
         console.error("Failed to fetch options:", err);
         setError(
@@ -89,30 +78,6 @@ const VideoCreator: React.FC = () => {
 
     fetchOptions();
   }, []);
-
-  // Effect to handle TTS engine change
-  useEffect(() => {
-    const fetchVoicesForEngine = async (engine: TTSEngineEnum) => {
-      if (!voicesForEngine[engine]) {
-        setLoadingVoices(true);
-        try {
-          const response = await axios.get(`/api/tts-voices/${engine}`);
-          setVoicesForEngine(prev => ({
-            ...prev,
-            [engine]: response.data.voices
-          }));
-        } catch (err) {
-          console.error(`Failed to fetch voices for ${engine}:`, err);
-        } finally {
-          setLoadingVoices(false);
-        }
-      }
-    };
-
-    if (config.ttsEngine && ttsEngines.length > 0) {
-      fetchVoicesForEngine(config.ttsEngine);
-    }
-  }, [config.ttsEngine, ttsEngines, voicesForEngine]);
 
   const handleAddScene = () => {
     setScenes([...scenes, { text: "", searchTerms: "" }]);
@@ -137,23 +102,7 @@ const VideoCreator: React.FC = () => {
   };
 
   const handleConfigChange = (field: keyof RenderConfig, value: any) => {
-    const newConfig = { ...config, [field]: value };
-    
-    // If TTS engine changes, reset voice to first available voice for that engine
-    if (field === 'ttsEngine' && voicesForEngine[value]) {
-      const availableVoices = voicesForEngine[value];
-      if (availableVoices.length > 0) {
-        newConfig.voice = availableVoices[0];
-      }
-    }
-    
-    setConfig(newConfig);
-  };
-
-  // Get available voices for current TTS engine
-  const getAvailableVoices = (): VoiceEnum[] => {
-    if (!config.ttsEngine) return [];
-    return voicesForEngine[config.ttsEngine] || [];
+    setConfig({ ...config, [field]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -356,45 +305,18 @@ const VideoCreator: React.FC = () => {
 
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
-                <InputLabel>TTS Engine</InputLabel>
-                <Select
-                  value={config.ttsEngine}
-                  onChange={(e) => handleConfigChange("ttsEngine", e.target.value)}
-                  label="TTS Engine"
-                  required
-                >
-                  {ttsEngines.map((engine) => (
-                    <MenuItem key={engine} value={engine}>
-                      {engine === TTSEngineEnum.kokoro && "Kokoro (AI Voice)"}
-                      {engine === TTSEngineEnum.openaiEdgeTTS && "OpenAI Edge TTS"}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Default Voice</InputLabel>
+                <InputLabel>Voice (OpenAI Edge TTS)</InputLabel>
                 <Select
                   value={config.voice}
                   onChange={(e) => handleConfigChange("voice", e.target.value)}
-                  label="Default Voice"
+                  label="Voice (OpenAI Edge TTS)"
                   required
-                  disabled={loadingVoices}
                 >
-                  {loadingVoices ? (
-                    <MenuItem disabled>
-                      <CircularProgress size={16} sx={{ mr: 1 }} />
-                      Loading voices...
+                  {voices.map((voice) => (
+                    <MenuItem key={voice} value={voice}>
+                      {voice}
                     </MenuItem>
-                  ) : (
-                    getAvailableVoices().map((voice) => (
-                      <MenuItem key={voice} value={voice}>
-                        {voice}
-                      </MenuItem>
-                    ))
-                  )}
+                  ))}
                 </Select>
               </FormControl>
             </Grid>

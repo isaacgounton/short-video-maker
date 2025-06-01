@@ -226,41 +226,14 @@ export class OpenAIEdgeTTS implements TTSService {
       return voice;
     }
 
-    // Try to map some common voice names to available voices
+    // Legacy OpenAI voice mappings for compatibility
     const voiceMappings: Record<string, string> = {
-      // Kokoro voice mappings to Edge TTS equivalents
-      "af_heart": "en-US-AriaNeural",
-      "af_alloy": "alloy",
-      "af_nova": "nova",
-      "af_bella": "en-US-JennyNeural",
-      "af_jessica": "en-US-EmmaNeural",
-      "af_sarah": "en-US-AmberNeural",
-      "bf_emma": "en-GB-LibbyNeural",
-      "bf_isabella": "en-GB-SoniaNeural",
-      "bf_alice": "en-AU-NatashaNeural",
-      "bf_lily": "en-CA-ClaraNeural",
-      
-      // Male voice mappings
-      "am_adam": "en-US-GuyNeural",
-      "am_echo": "echo",
-      "am_eric": "en-US-EricNeural",
-      "am_liam": "en-US-ChristopherNeural",
-      "am_michael": "en-US-BrianNeural",
-      "am_onyx": "onyx",
-      "bm_george": "en-GB-RyanNeural",
-      "bm_lewis": "en-AU-WilliamNeural",
-      "bm_daniel": "en-CA-LiamNeural",
-      "bm_fable": "fable",
-      
-      // Special voices
-      "af_aoede": "shimmer",
-      "af_kore": "en-US-DavisNeural",
-      "af_nicole": "fr-FR-DeniseNeural",
-      "af_river": "es-ES-ElviraNeural",
-      "af_sky": "de-DE-KatjaNeural",
-      "am_fenrir": "de-DE-ConradNeural",
-      "am_puck": "fr-FR-HenriNeural",
-      "am_santa": "es-ES-AlvaroNeural",
+      "alloy": "en-US-AriaNeural",
+      "echo": "en-US-GuyNeural",
+      "fable": "en-US-JennyNeural",
+      "onyx": "en-US-ChristopherNeural",
+      "nova": "en-US-EmmaNeural",
+      "shimmer": "en-US-MichelleNeural"
     };
 
     // Check if we have a mapping for this voice

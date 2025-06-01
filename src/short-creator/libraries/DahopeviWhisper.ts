@@ -27,7 +27,7 @@ export class DahopeviWhisper implements IWhisper {
   }
 
   async CreateCaption(audioPath: string): Promise<Caption[]> {
-    logger.debug({ audioPath }, "Starting to transcribe audio using Dahopevi API");
+    logger.info({ audioPath }, "Starting transcription using Dahopevi API");
     
     try {
       // Upload the audio file and get transcription with word-level timestamps
@@ -36,7 +36,7 @@ export class DahopeviWhisper implements IWhisper {
       // Parse the ASS format response to extract captions
       const captions = this.parseAssToCaption(transcriptionResult);
       
-      logger.debug({ audioPath, captionCount: captions.length }, "Captions created from Dahopevi API");
+      logger.info({ captionCount: captions.length }, "Transcription completed successfully");
       return captions;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -71,12 +71,11 @@ export class DahopeviWhisper implements IWhisper {
       if (response.status === 202) {
         // Asynchronous processing - need to poll for results
         const jobInfo = response.data;
-        logger.debug({ jobInfo }, "Received 202 response for transcription");
+        logger.info({ jobId: jobInfo.job_id || jobInfo.id || jobInfo.jobId }, "Transcription job submitted, polling for results");
         
         // The job_id might be directly in the response or nested
         const jobId = jobInfo.job_id || jobInfo.id || jobInfo.jobId;
         if (jobId) {
-          logger.info({ jobId }, "Transcription job submitted, polling for results");
           const assContent = await this.pollForTranscriptionResult(jobId);
           return assContent;
         } else {
@@ -139,7 +138,11 @@ export class DahopeviWhisper implements IWhisper {
         );
 
         const jobStatus = statusResponse.data;
-        logger.debug({ jobId, attempt, jobStatus }, "Polling transcription job status");
+        
+        // Log polling progress less frequently to reduce noise
+        if (attempt % 6 === 0) { // Log every 30 seconds (6 attempts * 5 second intervals)
+          logger.info({ jobId, attempt, status: jobStatus.job_status }, "Polling transcription job status");
+        }
 
         // Check if job is completed based on the response structure
         if (jobStatus.job_status === 'done' && jobStatus.response) {
@@ -189,14 +192,14 @@ export class DahopeviWhisper implements IWhisper {
     if (this.baseUrl.includes('localhost') || this.baseUrl.includes('api:')) {
       // Local container network - use the correct service name
       const fileUrl = `http://short-creator:3123/api/tmp/${fileName}`;
-      logger.debug({ audioPath, fileUrl }, "Audio file accessible via local container network");
+      logger.debug({ fileUrl }, "Using container network file access");
       return fileUrl;
     } else {
       // External API - need to provide a publicly accessible URL
       // For now, we'll try the container approach and let the API handle it
       // In production, you might want to upload to a cloud storage service
       const fileUrl = `http://short-creator:3123/api/tmp/${fileName}`;
-      logger.debug({ audioPath, fileUrl }, "Audio file URL for external API (may need public access)");
+      logger.debug({ fileUrl }, "Using container network for external API");
       return fileUrl;
     }
   }

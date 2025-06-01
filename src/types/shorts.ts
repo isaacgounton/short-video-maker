@@ -41,36 +41,6 @@ export const sceneInput = z.object({
 export type SceneInput = z.infer<typeof sceneInput>;
 
 export enum VoiceEnum {
-  // Kokoro voices (original enum values)
-  af_heart = "af_heart",
-  af_alloy = "af_alloy",
-  af_aoede = "af_aoede",
-  af_bella = "af_bella",
-  af_jessica = "af_jessica",
-  af_kore = "af_kore",
-  af_nicole = "af_nicole",
-  af_nova = "af_nova",
-  af_river = "af_river",
-  af_sarah = "af_sarah",
-  af_sky = "af_sky",
-  am_adam = "am_adam",
-  am_echo = "am_echo",
-  am_eric = "am_eric",
-  am_fenrir = "am_fenrir",
-  am_liam = "am_liam",
-  am_michael = "am_michael",
-  am_onyx = "am_onyx",
-  am_puck = "am_puck",
-  am_santa = "am_santa",
-  bf_emma = "bf_emma",
-  bf_isabella = "bf_isabella",
-  bm_george = "bm_george",
-  bm_lewis = "bm_lewis",
-  bf_alice = "bf_alice",
-  bf_lily = "bf_lily",
-  bm_daniel = "bm_daniel",
-  bm_fable = "bm_fable",
-  
   // OpenAI Compatible voices
   alloy = "alloy",
   echo = "echo",
@@ -243,11 +213,6 @@ export enum MusicVolumeEnum {
   high = "high",
 }
 
-export enum TTSEngineEnum {
-  kokoro = "kokoro",
-  openaiEdgeTTS = "openai-edge-tts",
-}
-
 export const renderConfig = z.object({
   paddingBack: z
     .number()
@@ -268,23 +233,17 @@ export const renderConfig = z.object({
     .optional()
     .describe(
       "Background color of the caption, a valid css color, default is blue",
-    ),
-  voice: z
+    ),  voice: z
     .string()
     .optional()
-    .describe("Voice to be used for the speech, default is af_heart"),
+    .describe("Voice to be used for the speech, default is en-US-AriaNeural"),
   orientation: z
     .nativeEnum(OrientationEnum)
     .optional()
-    .describe("Orientation of the video, default is portrait"),
-  musicVolume: z
+    .describe("Orientation of the video, default is portrait"),  musicVolume: z
     .nativeEnum(MusicVolumeEnum)
     .optional()
     .describe("Volume of the music, default is high"),
-  ttsEngine: z
-    .nativeEnum(TTSEngineEnum)
-    .optional()
-    .describe("TTS engine to use for speech generation, default is openai-edge-tts"),
 });
 export type RenderConfig = z.infer<typeof renderConfig>;
 
@@ -331,7 +290,7 @@ export type MusicForVideo = Music & {
 
 export type MusicTag = `${MusicMoodEnum}`;
 
-export type kokoroModelPrecision = "fp32" | "fp16" | "q8" | "q4" | "q4f16";
+
 
 export type whisperModels =
   | "tiny"
