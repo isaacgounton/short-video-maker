@@ -23,7 +23,7 @@ export class OpenAIEdgeTTS {
     try {
       logger.debug({ text, voice, baseUrl: this.baseUrl }, "Generating audio with OpenAI Edge TTS");
       
-      const response = await axios.post<OpenAIEdgeTTSResponse>(
+      const response = await axios.post(
         `${this.baseUrl}/v1/audio/speech`,
         {
           text,
@@ -36,35 +36,26 @@ export class OpenAIEdgeTTS {
             "Authorization": this.apiKey ? `Bearer ${this.apiKey}` : undefined,
             "Content-Type": "application/json",
           },
+          responseType: "arraybuffer", // Expect binary audio data directly
           timeout: 30000, // 30 second timeout for TTS generation
         }
       );
 
-      const responseData = response.data;
+      const audioBuffer = response.data;
       
-      if (!responseData.audio_url) {
-        throw new Error(`No audio_url found in response: ${JSON.stringify(responseData)}`);
+      // Validate that we received audio data
+      if (!audioBuffer || audioBuffer.byteLength === 0) {
+        throw new Error(`No audio data received from OpenAI Edge TTS API`);
       }
 
-      // Download the audio file
-      logger.debug({ audio_url: responseData.audio_url }, "Downloading generated audio file");
+      logger.debug({ 
+        fileSize: `${audioBuffer.byteLength} bytes`,
+        contentType: response.headers['content-type']
+      }, "Received audio data from OpenAI Edge TTS");
       
-      const audioResponse = await axios.get(responseData.audio_url, {
-        responseType: "arraybuffer",
-        timeout: 15000, // 15 second timeout for download
-      });
-
-      const audioBuffer = audioResponse.data;
-      
-      // Use duration from API response if available, otherwise estimate
-      let audioLength: number;
-      if (responseData.duration && typeof responseData.duration === 'number') {
-        audioLength = responseData.duration;
-      } else {
-        // Estimate duration based on text length (rough approximation: 150 words per minute)
-        const wordCount = text.split(/\s+/).length;
-        audioLength = Math.max(1, Math.ceil((wordCount / 150) * 60));
-      }
+      // Estimate duration based on text length (rough approximation: 150 words per minute)
+      const wordCount = text.split(/\s+/).length;
+      const audioLength = Math.max(1, Math.ceil((wordCount / 150) * 60));
       
       logger.info({ 
         text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
@@ -167,7 +158,7 @@ export class OpenAIEdgeTTS {
 
       logger.debug({ baseUrl: this.baseUrl }, "Fetching available voices from OpenAI Edge TTS API");
 
-      const response = await axios.get(`${this.baseUrl}/v1/voices`, {
+      const response = await axios.get(`${this.baseUrl}/v1/voices/all`, {
         headers,
         timeout: 5000, // 5 second timeout
       });

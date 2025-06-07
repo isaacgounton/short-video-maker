@@ -67,7 +67,7 @@ const config = {
 
 ### 1. Check Service Availability
 ```bash
-curl -X GET http://tts.dahopevi.com:5050/v1/voices
+curl -X GET http://tts.dahopevi.com:5050/v1/voices/all
 ```
 
 ### 2. Test Audio Generation
@@ -122,7 +122,7 @@ The integration includes fallback mechanisms:
 
 **API Endpoints Confirmed**:
 - TTS Generation: `POST /v1/audio/speech`
-- Voice List: `GET /v1/voices`
+- Voice List: `GET /v1/voices/all` (fetches all languages)
 
 The integration should now work correctly after rebuilding the container.
 
