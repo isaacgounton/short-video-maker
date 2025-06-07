@@ -43,7 +43,7 @@ OpenAI Edge TTS has been successfully integrated into your short video maker app
 ### 1. Environment Variables
 Add to your `.env` file:
 ```env
-OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com:5050
+OPENAI_EDGE_TTS_URL=http://tts.dahopevi.com:5050
 OPENAI_EDGE_TTS_API_KEY=your_openai_api_key
 ```
 
@@ -58,7 +58,7 @@ const config = {
 
 ## Service Information
 
-- **URL**: `https://tts.dahopevi.com:5050`
+- **URL**: `http://tts.dahopevi.com:5050` (HTTP, not HTTPS)
 - **Container**: `openai-edge-tts`
 - **Coolify Project**: `apis`
 - **Available Voices**: `alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer`
@@ -67,12 +67,12 @@ const config = {
 
 ### 1. Check Service Availability
 ```bash
-curl -X GET https://tts.dahopevi.com:5050/v1/audio/speech/voices
+curl -X GET http://tts.dahopevi.com:5050/v1/audio/speech/voices
 ```
 
 ### 2. Test Audio Generation
 ```bash
-curl -X POST https://tts.dahopevi.com:5050/v1/audio/speech \
+curl -X POST http://tts.dahopevi.com:5050/v1/audio/speech \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -105,11 +105,16 @@ The integration includes fallback mechanisms:
 3. **Test**: Create a test video using the new TTS engine
 4. **Monitor**: Check logs to ensure everything is working correctly
 
-## Recent Fix Applied ✅
+## Recent Fixes Applied ✅
 
-**Issue**: The docker-compose.yml was missing the port `:5050` in the OpenAI Edge TTS URL, causing 404 errors.
+**Issue 1**: The docker-compose.yml was missing the port `:5050` in the OpenAI Edge TTS URL, causing 404 errors.
 
-**Fixed**: Updated `OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com` to `OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com:5050`
+**Issue 2**: SSL Protocol Error - The service at port 5050 only supports HTTP, not HTTPS, causing `ERR_SSL_PROTOCOL_ERROR`.
+
+**Fixed**: Updated the URL configuration:
+- ❌ `OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com` (missing port)
+- ❌ `OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com:5050` (wrong protocol)
+- ✅ `OPENAI_EDGE_TTS_URL=http://tts.dahopevi.com:5050` (correct)
 
 The integration should now work correctly after rebuilding the container.
 
