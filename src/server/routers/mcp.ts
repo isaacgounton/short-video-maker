@@ -60,7 +60,7 @@ export class MCPRouter {
             name: "list-voices-for-engine",
             description: "List available voices for a specific TTS engine",
             parameters: {
-              engine: "TTS engine name (kokoro, edge-tts, streamlabs-polly)"
+              engine: "TTS engine name (kokoro, edge-tts, streamlabs-polly, openai-edge-tts)"
             }
           },
           {
@@ -177,7 +177,7 @@ export class MCPRouter {
       "list-voices-for-engine",
       "List available voices for a specific TTS engine (uses cached/fallback voices for speed)",
       {
-        engine: z.enum(["kokoro", "edge-tts", "streamlabs-polly"]).describe("TTS engine name"),
+        engine: z.enum(["kokoro", "edge-tts", "streamlabs-polly", "openai-edge-tts"]).describe("TTS engine name"),
       },
       async ({ engine }) => {
         // Use the fast method that doesn't trigger service initialization
@@ -222,7 +222,7 @@ export class MCPRouter {
           };
         } catch (error) {
           // Fallback to basic engine list
-          const fallbackEngines = ["kokoro", "edge-tts", "streamlabs-polly"];
+          const fallbackEngines = ["kokoro", "edge-tts", "streamlabs-polly", "openai-edge-tts"];
           
           return {
             content: [
@@ -333,7 +333,8 @@ export class MCPRouter {
           "English": {
             "kokoro": ["af_heart", "am_adam", "bm_lewis", "bf_emma"],
             "edge-tts": ["en-US-AriaNeural", "en-US-JennyNeural", "en-GB-SoniaNeural", "en-CA-ClaraNeural"],
-            "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian"]
+            "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian"],
+            "openai-edge-tts": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
           },
           "French": {
             "edge-tts": ["fr-FR-DeniseNeural", "fr-FR-HenriNeural", "fr-CA-AntoineNeural", "fr-CA-SylvieNeural"],

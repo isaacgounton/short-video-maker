@@ -1,5 +1,6 @@
 import { Kokoro } from "./Kokoro";
 import { EdgeTTS } from "./EdgeTTS";
+import { OpenAIEdgeTTS } from "./OpenAIEdgeTTS";
 import { StreamlabsPolly } from "./StreamlabsPolly";
 import { TTSEngineEnum, Voices } from "../../types/shorts";
 import { logger } from "../../config";
@@ -48,6 +49,12 @@ export class TTSFactory {
       
       case TTSEngineEnum.streamlabspolly:
         service = await StreamlabsPolly.init();
+        break;
+      
+      case TTSEngineEnum.openai_edge_tts:
+        const openai_tts_url = process.env.OPENAI_EDGE_TTS_URL || 'https://tts.dahopevi.com:5050';
+        const openai_api_key = process.env.OPENAI_EDGE_TTS_API_KEY || process.env.OPENAI_API_KEY || '';
+        service = await OpenAIEdgeTTS.init(openai_api_key, openai_tts_url);
         break;
       
       default:

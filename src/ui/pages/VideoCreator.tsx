@@ -368,6 +368,7 @@ const VideoCreator: React.FC = () => {
                       {engine === TTSEngineEnum.kokoro && "Kokoro (AI Voice)"}
                       {engine === TTSEngineEnum.edgetts && "Edge TTS (Microsoft)"}
                       {engine === TTSEngineEnum.streamlabspolly && "AWS Polly (Streamlabs)"}
+                      {engine === TTSEngineEnum.openai_edge_tts && "OpenAI Edge TTS (High Quality)"}
                     </MenuItem>
                   ))}
                 </Select>

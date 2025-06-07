@@ -137,6 +137,14 @@ export enum VoiceEnum {
   "ar-SA-HamedNeural" = "ar-SA-HamedNeural",
   "ar-EG-ShakirNeural" = "ar-EG-ShakirNeural",
   "ar-EG-SalmaNeural" = "ar-EG-SalmaNeural",
+  
+  // OpenAI TTS voices
+  alloy = "alloy",
+  echo = "echo", 
+  fable = "fable",
+  onyx = "onyx",
+  nova = "nova",
+  shimmer = "shimmer",
 }
 
 export enum OrientationEnum {
@@ -155,6 +163,7 @@ export enum TTSEngineEnum {
   kokoro = "kokoro",
   edgetts = "edge-tts", 
   streamlabspolly = "streamlabs-polly",
+  openai_edge_tts = "openai-edge-tts",
 }
 
 export const renderConfig = z.object({

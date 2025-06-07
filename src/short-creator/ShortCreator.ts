@@ -361,7 +361,8 @@ export class ShortCreator {
         "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "es-ES-ElviraNeural",
         "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
       ],
-      "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
+      "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"],
+      "openai-edge-tts": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
     };
     
     return fallbackVoices[engine] || [];
@@ -376,7 +377,8 @@ export class ShortCreator {
         "fr-FR-DeniseNeural", "fr-CA-AntoineNeural", "es-ES-ElviraNeural",
         "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
       ],
-      "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"]
+      "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"],
+      "openai-edge-tts": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
     };
   }
 
