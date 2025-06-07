@@ -105,6 +105,14 @@ The integration includes fallback mechanisms:
 3. **Test**: Create a test video using the new TTS engine
 4. **Monitor**: Check logs to ensure everything is working correctly
 
+## Recent Fix Applied ✅
+
+**Issue**: The docker-compose.yml was missing the port `:5050` in the OpenAI Edge TTS URL, causing 404 errors.
+
+**Fixed**: Updated `OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com` to `OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com:5050`
+
+The integration should now work correctly after rebuilding the container.
+
 ## Troubleshooting
 
 If you encounter issues:
