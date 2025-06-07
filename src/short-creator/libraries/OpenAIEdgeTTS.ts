@@ -167,7 +167,7 @@ export class OpenAIEdgeTTS {
 
       logger.debug({ baseUrl: this.baseUrl }, "Fetching available voices from OpenAI Edge TTS API");
 
-      const response = await axios.get(`${this.baseUrl}/v1/audio/speech/voices`, {
+      const response = await axios.get(`${this.baseUrl}/v1/voices`, {
         headers,
         timeout: 5000, // 5 second timeout
       });

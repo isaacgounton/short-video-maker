@@ -67,7 +67,7 @@ const config = {
 
 ### 1. Check Service Availability
 ```bash
-curl -X GET http://tts.dahopevi.com:5050/v1/audio/speech/voices
+curl -X GET http://tts.dahopevi.com:5050/v1/voices
 ```
 
 ### 2. Test Audio Generation
@@ -111,10 +111,18 @@ The integration includes fallback mechanisms:
 
 **Issue 2**: SSL Protocol Error - The service at port 5050 only supports HTTP, not HTTPS, causing `ERR_SSL_PROTOCOL_ERROR`.
 
-**Fixed**: Updated the URL configuration:
+**Issue 3**: Wrong API endpoint - The voice listing endpoint was incorrect, causing 404 errors when fetching voices.
+
+**Fixed**: Updated the configurations:
 - ❌ `OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com` (missing port)
 - ❌ `OPENAI_EDGE_TTS_URL=https://tts.dahopevi.com:5050` (wrong protocol)
 - ✅ `OPENAI_EDGE_TTS_URL=http://tts.dahopevi.com:5050` (correct)
+- ❌ Voice endpoint: `/v1/audio/speech/voices` (wrong)
+- ✅ Voice endpoint: `/v1/voices` (correct)
+
+**API Endpoints Confirmed**:
+- TTS Generation: `POST /v1/audio/speech`
+- Voice List: `GET /v1/voices`
 
 The integration should now work correctly after rebuilding the container.
 
