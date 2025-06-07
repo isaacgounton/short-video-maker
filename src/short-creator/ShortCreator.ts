@@ -362,7 +362,13 @@ export class ShortCreator {
         "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
       ],
       "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"],
-      "openai-edge-tts": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
+      "openai-edge-tts": [
+        "en-US-AvaNeural", "en-US-AndrewNeural", "en-US-EmmaNeural", 
+        "en-US-BrianNeural", "en-US-AnaNeural", "en-US-AriaNeural",
+        "en-US-ChristopherNeural", "en-US-EricNeural", "en-US-GuyNeural",
+        "en-US-JennyNeural", "en-US-MichelleNeural", "en-US-RogerNeural",
+        "en-US-SteffanNeural"
+      ]
     };
     
     return fallbackVoices[engine] || [];
@@ -378,7 +384,13 @@ export class ShortCreator {
         "de-DE-KatjaNeural", "it-IT-ElsaNeural", "pt-BR-FranciscaNeural"
       ],
       "streamlabs-polly": ["Joanna", "Matthew", "Amy", "Brian", "Emma"],
-      "openai-edge-tts": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
+      "openai-edge-tts": [
+        "en-US-AvaNeural", "en-US-AndrewNeural", "en-US-EmmaNeural", 
+        "en-US-BrianNeural", "en-US-AnaNeural", "en-US-AriaNeural",
+        "en-US-ChristopherNeural", "en-US-EricNeural", "en-US-GuyNeural",
+        "en-US-JennyNeural", "en-US-MichelleNeural", "en-US-RogerNeural",
+        "en-US-SteffanNeural"
+      ]
     };
   }
 

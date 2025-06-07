@@ -172,16 +172,53 @@ export class OpenAIEdgeTTS {
         timeout: 5000, // 5 second timeout
       });
       
-      // Handle different possible response formats
+      // Log the raw response to understand its structure
+      logger.debug({ 
+        responseData: response.data,
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        firstItem: Array.isArray(response.data) ? response.data[0] : null
+      }, "Raw voice response from OpenAI Edge TTS API");
+      
+      // Handle the specific voice structure: [{voices: [{name, gender, language}]}]
       let voices: string[] = [];
       
       if (Array.isArray(response.data)) {
-        voices = response.data;
+        // The API returns an array with one object containing a voices array
+        const voicesContainer = response.data[0];
+        if (voicesContainer && voicesContainer.voices && Array.isArray(voicesContainer.voices)) {
+          voices = voicesContainer.voices.map((voice: any) => voice.name).filter(Boolean);
+        } else {
+          // Fallback: try to extract from each item in the array
+          voices = response.data.map((item: any) => {
+            if (typeof item === 'string') {
+              return item;
+            } else if (item && typeof item === 'object') {
+              return item.name || item.id || item.voice || String(item);
+            }
+            return String(item);
+          }).filter(Boolean);
+        }
       } else if (response.data.voices && Array.isArray(response.data.voices)) {
-        voices = response.data.voices;
+        // Direct voices array format
+        voices = response.data.voices.map((voice: any) => {
+          if (typeof voice === 'string') {
+            return voice;
+          } else if (voice && typeof voice === 'object') {
+            return voice.name || voice.id || voice.voice || String(voice);
+          }
+          return String(voice);
+        }).filter(Boolean);
       } else if (response.data.data && Array.isArray(response.data.data)) {
         // OpenAI API format
-        voices = response.data.data.map((voice: any) => voice.id || voice.name).filter(Boolean);
+        voices = response.data.data.map((voice: any) => {
+          if (typeof voice === 'string') {
+            return voice;
+          } else if (voice && typeof voice === 'object') {
+            return voice.name || voice.id || voice.voice || String(voice);
+          }
+          return String(voice);
+        }).filter(Boolean);
       }
       
       if (!voices.length) {
