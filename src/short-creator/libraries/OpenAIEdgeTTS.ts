@@ -2,9 +2,17 @@ import axios from "axios";
 import { Voices } from "../../types/shorts";
 import { logger } from "../../config";
 
-interface OpenAIEdgeTTSResponse {
+interface EdgeTTSResponse {
+  response: {
+    audio_url: string;
+    subtitle_url: string;
+    duration?: number;
+  };
+}
+
+interface DahopeviResponse {
   audio_url: string;
-  subtitle_url?: string;
+  subtitle_url: string;
   duration?: number;
 }
 
@@ -21,60 +29,71 @@ export class OpenAIEdgeTTS {
     audioLength: number;
   }> {
     try {
-      logger.debug({ text, voice, baseUrl: this.baseUrl }, "Generating audio with OpenAI Edge TTS");
-      
-      const response = await axios.post(
+      const response = await axios.post<EdgeTTSResponse>(
         `${this.baseUrl}/v1/audio/speech`,
         {
           text,
           voice,
-          model: "tts-1", // OpenAI TTS model
-          response_format: "mp3"
+          tts: "openai-edge-tts", // Using openai-edge-tts engine in Dahopevi
         },
         {
           headers: {
-            "Authorization": this.apiKey ? `Bearer ${this.apiKey}` : undefined,
+            "x-api-key": this.apiKey,
             "Content-Type": "application/json",
           },
-          responseType: "arraybuffer", // Expect binary audio data directly
-          timeout: 30000, // 30 second timeout for TTS generation
         }
       );
 
-      const audioBuffer = response.data;
+      // Handle both response formats: dahopevi direct and wrapped responses
+      const responseData = response.data as DahopeviResponse | EdgeTTSResponse;
       
-      // Validate that we received audio data
-      if (!audioBuffer || audioBuffer.byteLength === 0) {
-        throw new Error(`No audio data received from OpenAI Edge TTS API`);
+      let audio_url: string;
+      let duration: number | undefined;
+      
+      // Check if it's the wrapped format (EdgeTTSResponse)
+      if ('response' in responseData) {
+        audio_url = responseData.response.audio_url;
+        duration = responseData.response.duration;
+      } else {
+        // Direct format (DahopeviResponse)
+        audio_url = responseData.audio_url;
+        duration = responseData.duration;
+      }
+      
+      if (!audio_url) {
+        throw new Error(`No audio_url found in response: ${JSON.stringify(responseData)}`);
       }
 
+      // Download the audio file
+      const audioResponse = await axios.get(audio_url, {
+        responseType: "arraybuffer",
+      });
+
+      // Get audio duration from API response or estimate
+      const audioBuffer = audioResponse.data;
+      
+      // Use duration from API response if available, otherwise use conservative estimate
+      let audioLength: number;
+      if (duration && typeof duration === 'number') {
+        audioLength = duration;
+      } else {
+        // Conservative fallback - will be corrected by FFmpeg processing
+        audioLength = 10; // Conservative placeholder
+      }
+      
       logger.debug({ 
-        fileSize: `${audioBuffer.byteLength} bytes`,
-        contentType: response.headers['content-type']
-      }, "Received audio data from OpenAI Edge TTS");
-      
-      // Estimate duration based on text length (rough approximation: 150 words per minute)
-      const wordCount = text.split(/\s+/).length;
-      const audioLength = Math.max(1, Math.ceil((wordCount / 150) * 60));
-      
-      logger.info({ 
-        text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+        text, 
         voice, 
-        audioLength: `${audioLength}s`,
+        audioLength: `${audioLength}s (estimated)`,
         fileSize: `${audioBuffer.byteLength} bytes`
-      }, "Audio generated successfully with OpenAI Edge TTS");
+      }, "Audio generated with OpenAI Edge TTS via Dahopevi");
 
       return {
         audio: audioBuffer,
         audioLength,
       };
     } catch (error) {
-      logger.error({ 
-        error: error instanceof Error ? error.message : String(error),
-        text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-        voice,
-        baseUrl: this.baseUrl
-      }, "Error generating audio with OpenAI Edge TTS");
+      logger.error("Error generating audio with OpenAI Edge TTS via Dahopevi:", error);
       throw error;
     }
   }
@@ -148,83 +167,28 @@ export class OpenAIEdgeTTS {
 
   async getAvailableVoicesFromAPI(): Promise<string[]> {
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json"
-      };
-      
+      const headers: Record<string, string> = {};
       if (this.apiKey) {
-        headers["Authorization"] = `Bearer ${this.apiKey}`;
+        headers["x-api-key"] = this.apiKey;
       }
 
-      logger.debug({ baseUrl: this.baseUrl }, "Fetching available voices from OpenAI Edge TTS API");
-
-      const response = await axios.get(`${this.baseUrl}/v1/voices/all`, {
+      const response = await axios.get(`${this.baseUrl}/v1/audio/speech/voices`, {
         headers,
         timeout: 5000, // 5 second timeout
       });
       
-      // Log the raw response to understand its structure
-      logger.debug({ 
-        responseData: response.data,
-        dataType: typeof response.data,
-        isArray: Array.isArray(response.data),
-        firstItem: Array.isArray(response.data) ? response.data[0] : null
-      }, "Raw voice response from OpenAI Edge TTS API");
+      const voices = response.data?.response?.voices || [];
+      const openaiEdgeVoices = voices.filter((voice: { engine?: string }) => voice?.engine === "openai-edge-tts");
       
-      // Handle the specific voice structure: [{voices: [{name, gender, language}]}]
-      let voices: string[] = [];
-      
-      if (Array.isArray(response.data)) {
-        // The API returns an array with one object containing a voices array
-        const voicesContainer = response.data[0];
-        if (voicesContainer && voicesContainer.voices && Array.isArray(voicesContainer.voices)) {
-          voices = voicesContainer.voices.map((voice: any) => voice.name).filter(Boolean);
-        } else {
-          // Fallback: try to extract from each item in the array
-          voices = response.data.map((item: any) => {
-            if (typeof item === 'string') {
-              return item;
-            } else if (item && typeof item === 'object') {
-              return item.name || item.id || item.voice || String(item);
-            }
-            return String(item);
-          }).filter(Boolean);
-        }
-      } else if (response.data.voices && Array.isArray(response.data.voices)) {
-        // Direct voices array format
-        voices = response.data.voices.map((voice: any) => {
-          if (typeof voice === 'string') {
-            return voice;
-          } else if (voice && typeof voice === 'object') {
-            return voice.name || voice.id || voice.voice || String(voice);
-          }
-          return String(voice);
-        }).filter(Boolean);
-      } else if (response.data.data && Array.isArray(response.data.data)) {
-        // OpenAI API format
-        voices = response.data.data.map((voice: any) => {
-          if (typeof voice === 'string') {
-            return voice;
-          } else if (voice && typeof voice === 'object') {
-            return voice.name || voice.id || voice.voice || String(voice);
-          }
-          return String(voice);
-        }).filter(Boolean);
-      }
-      
-      if (!voices.length) {
-        logger.warn("No voices found in API response, using fallback voices");
+      if (!openaiEdgeVoices.length) {
+        logger.warn("No openai-edge-tts voices found in API response, using fallback voices");
         return this.getFallbackVoices();
       }
       
-      logger.info({ voiceCount: voices.length }, "Successfully fetched voices from OpenAI Edge TTS API");
-      return voices;
+      return openaiEdgeVoices.map((voice: { name?: string }) => voice?.name).filter(Boolean);
     } catch (error) {
-      logger.error({ 
-        error: error instanceof Error ? error.message : String(error),
-        baseUrl: this.baseUrl 
-      }, "Error fetching voices from OpenAI Edge TTS API, using fallback voices");
-      return this.getFallbackVoices();
+      logger.error("Error fetching voices from Dahopevi (using fallback voices):", error);
+      return this.getFallbackVoices(); // Always return fallback voices on error
     }
   }
 

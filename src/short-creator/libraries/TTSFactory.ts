@@ -52,9 +52,11 @@ export class TTSFactory {
         break;
       
       case TTSEngineEnum.openai_edge_tts:
-        const openai_tts_url = process.env.OPENAI_EDGE_TTS_URL || 'https://tts.dahopevi.com:5050';
-        const openai_api_key = process.env.OPENAI_EDGE_TTS_API_KEY || process.env.OPENAI_API_KEY || '';
-        service = await OpenAIEdgeTTS.init(openai_api_key, openai_tts_url);
+        // Use the same Dahopevi TTS service as Edge TTS, just with openai-edge-tts engine parameter
+        // This uses your DAHOPEVI_API_KEY, NOT an OpenAI API key
+        const dahopevi_url_for_openai = process.env.DAHOPEVI_BASE_URL || process.env.DAHOPEVI_URL || 'https://api.dahopevi.com';
+        const dahopevi_api_key = process.env.DAHOPEVI_API_KEY || '';
+        service = await OpenAIEdgeTTS.init(dahopevi_api_key, dahopevi_url_for_openai);
         break;
       
       default:

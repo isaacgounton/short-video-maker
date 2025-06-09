@@ -9,7 +9,6 @@ services:
       - .env
     environment:
       - DEV=false
-      - OPENAI_EDGE_TTS_URL=http://tts.dahopevi.com:5050
     ports:
       - "3123:3123"
     entrypoint: ["node", "dist/index.js"]
