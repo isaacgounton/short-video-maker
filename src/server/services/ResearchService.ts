@@ -393,7 +393,7 @@ Key Areas of ${searchTerm}:
         `Key considerations for ${topic} include both opportunities and challenges that shape its evolution.`
       ];
       
-      const templateIndex = scenes.length % sceneTemplates.length;
+      const templateIndex: number = scenes.length % sceneTemplates.length;
       scenes.push({
         text: sceneTemplates[templateIndex],
         searchTerms: keyTerms.slice(0, 4)
