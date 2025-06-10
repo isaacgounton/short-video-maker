@@ -83,11 +83,11 @@ export class ResearchService {
         return await this.generateScenesWithAI(content, title, targetLanguage);
       } else {
         logger.info("Using mock scene generation (no DeepSeek API key configured)");
-        return this.generateMockScenes(title, targetLanguage);
+        return this.generateMockScenes(title, targetLanguage, content);
       }
     } catch (error) {
       logger.error(error, "Error in generateScenes, falling back to mock");
-      return this.generateMockScenes(title, targetLanguage);
+      return this.generateMockScenes(title, targetLanguage, content);
     }
   }
 
@@ -109,7 +109,7 @@ export class ResearchService {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar-pro',
           messages: [{
             role: 'user',
             content: `Research this topic in detail for ${targetLanguage} language. Provide comprehensive information, key points, and relevant context: ${searchTerm}`
@@ -273,7 +273,10 @@ Key Areas of ${searchTerm}:
       }
 
       const result = await response.json();
-      const aiResponse = result.choices[0].message.content;
+      let aiResponse = result.choices[0].message.content;
+      
+      // Clean up AI response - remove markdown code blocks if present
+      aiResponse = aiResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       
       // Parse JSON response from AI
       const parsedResult = JSON.parse(aiResponse);
@@ -326,9 +329,9 @@ Key Areas of ${searchTerm}:
   }
 
   /**
-   * Generate mock scenes for development/fallback
+   * Generate scenes based on content (fallback when AI not available)
    */
-  private generateMockScenes(title: string, targetLanguage: string): SceneGenerationResult {
+  private generateMockScenes(title: string, targetLanguage: string, content?: string): SceneGenerationResult {
     const voiceMap: { [key: string]: string } = {
       'en': 'en-US-AriaNeural',
       'fr': 'fr-FR-DeniseNeural', 
@@ -341,31 +344,64 @@ Key Areas of ${searchTerm}:
       'ar': 'ar-SA-ZariyahNeural'
     };
 
-    const scenes = [
-      {
-        text: "Welcome to our exploration of this fascinating topic. Today we'll dive deep into the subject and discover what makes it so important in our modern world.",
-        searchTerms: ["introduction", "welcome", "modern world"]
-      },
-      {
-        text: "Let's start by understanding the fundamental concepts and key principles that form the foundation of this subject.",
-        searchTerms: ["foundation", "concepts", "principles"]
-      },
-      {
-        text: "The historical development shows us how this field has evolved over time and shaped our current understanding.",
-        searchTerms: ["history", "evolution", "development"]
-      },
-      {
-        text: "In today's applications, we can see real-world examples of how these principles are being used to solve important problems.",
-        searchTerms: ["applications", "real world", "solutions"]
-      },
-      {
-        text: "Looking toward the future, the potential implications and opportunities are both exciting and transformative.",
-        searchTerms: ["future", "potential", "transformation"]
+    // Extract key topic from title
+    const topic = title.replace(/^(Comprehensive Research:|Research Report:|Comprehensive Guide to)\s*/i, '');
+    
+    // Try to extract key information from content if available
+    let keyTerms = [topic];
+    let keyPoints: string[] = [];
+    
+    if (content) {
+      // Extract key terms and concepts from content
+      const sentences = content.split(/[.!?]+/).slice(0, 10); // First 10 sentences
+      const words = content.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+      const commonTerms = words.filter((word, index, arr) => 
+        arr.indexOf(word) !== index && 
+        !['this', 'that', 'with', 'have', 'will', 'been', 'from', 'they', 'were', 'said', 'each', 'which', 'their', 'time', 'also', 'many', 'more', 'some', 'very', 'what', 'know', 'just', 'first', 'into', 'over', 'think', 'than', 'only', 'come', 'work', 'life', 'way', 'even', 'back', 'any', 'good', 'woman', 'through', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy', 'did', 'man', 'out', 'she', 'use', 'her', 'you', 'all', 'and', 'are', 'but', 'can', 'had', 'not', 'one', 'our', 'the', 'was', 'for'].includes(word)
+      );
+      
+      keyTerms = [topic, ...commonTerms.slice(0, 5)];
+      
+      // Extract meaningful sentences
+      keyPoints = sentences.filter(s => s.trim().length > 20 && s.trim().length < 200).slice(0, 6);
+    }
+
+    // Generate scenes based on available content
+    const scenes = [];
+    
+    if (keyPoints.length > 0) {
+      // Use actual content points
+      for (let i = 0; i < Math.min(6, keyPoints.length); i++) {
+        const point = keyPoints[i].trim();
+        if (point) {
+          scenes.push({
+            text: point.length > 200 ? point.substring(0, 200) + "..." : point,
+            searchTerms: keyTerms.slice(0, 4)
+          });
+        }
       }
-    ];
+    }
+    
+    // Fill remaining scenes if needed
+    while (scenes.length < 4) {
+      const sceneTemplates = [
+        `Understanding ${topic} is crucial in today's rapidly evolving landscape, where its applications continue to expand.`,
+        `The fundamentals of ${topic} involve key principles that form the backbone of modern implementations.`,
+        `Current applications of ${topic} demonstrate its versatility across various industries and use cases.`,
+        `The benefits of ${topic} extend beyond immediate applications to long-term strategic advantages.`,
+        `Future developments in ${topic} promise exciting innovations and breakthrough applications.`,
+        `Key considerations for ${topic} include both opportunities and challenges that shape its evolution.`
+      ];
+      
+      const templateIndex = scenes.length % sceneTemplates.length;
+      scenes.push({
+        text: sceneTemplates[templateIndex],
+        searchTerms: keyTerms.slice(0, 4)
+      });
+    }
 
     return {
-      scenes,
+      scenes: scenes.slice(0, 6), // Max 6 scenes
       config: {
         music: "chill",
         voice: voiceMap[targetLanguage] || voiceMap['en'],
@@ -382,25 +418,51 @@ Key Areas of ${searchTerm}:
    * Create AI prompt for scene generation
    */
   private createSceneGenerationPrompt(content: string, title: string, targetLanguage: string): string {
-    return `Create a short video script from this research content for ${targetLanguage} language.
+    // Truncate content if too long but keep key information
+    const maxContentLength = 2000;
+    let truncatedContent = content;
+    if (content.length > maxContentLength) {
+      truncatedContent = content.substring(0, maxContentLength) + "...";
+    }
 
+    return `You are a professional video script writer. Create an engaging short video script based on this SPECIFIC research content. You MUST use the actual facts, details, and information from the research - do NOT create generic content.
+
+=== RESEARCH TO CONVERT ===
 Title: ${title}
-Content: ${content}
 
-Requirements:
-1. Create 4-6 scenes that tell a compelling story
-2. Each scene should be 15-25 seconds when spoken (approximately 40-60 words)
-3. Use clear, engaging language suitable for video narration in ${targetLanguage}
-4. Include 3-4 relevant search terms for background videos per scene
-5. Make it educational but entertaining
-6. Ensure smooth transitions between scenes
+Research Content:
+${truncatedContent}
 
-Return ONLY valid JSON with this exact structure:
+=== YOUR TASK ===
+Transform this research into 4-6 video scenes that:
+1. Use SPECIFIC facts, numbers, examples, and details from the research above
+2. Each scene should be 40-60 words (15-25 seconds when spoken)
+3. Tell a compelling story using the ACTUAL research findings
+4. Include specific search terms based on the REAL content discussed
+5. Write in ${targetLanguage} language
+6. Be educational but engaging
+
+=== CRITICAL REQUIREMENTS ===
+- Extract SPECIFIC information from the research content provided
+- Use REAL facts, statistics, examples from the content
+- Do NOT use generic phrases like "fascinating topic" or "modern world"
+- Base search terms on ACTUAL subjects discussed in the research
+- Each scene must reference concrete information from the research
+
+=== EXAMPLE STRUCTURE ===
+Scene 1: Hook with a specific fact/statistic from research
+Scene 2: Core concept/definition with real details
+Scene 3: Specific application/example from research
+Scene 4: Concrete benefit/impact mentioned in research
+Scene 5: Future implications based on research findings
+Scene 6: Call to action or summary of key takeaway
+
+Return ONLY this JSON structure:
 {
   "scenes": [
     {
-      "text": "The narration text for this scene in ${targetLanguage}",
-      "searchTerms": ["keyword1", "keyword2", "keyword3", "keyword4"]
+      "text": "Specific narration using REAL research content (40-60 words)",
+      "searchTerms": ["specific", "terms", "from", "actual research"]
     }
   ],
   "config": {
