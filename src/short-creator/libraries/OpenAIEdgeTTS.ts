@@ -177,7 +177,8 @@ export class OpenAIEdgeTTS {
         timeout: 5000, // 5 second timeout
       });
       
-      const voices = response.data?.response?.voices || [];
+      // Handle both response formats: direct voices array or wrapped in response
+      const voices = response.data?.voices || response.data?.response?.voices || [];
       const openaiEdgeVoices = voices.filter((voice: { engine?: string }) => voice?.engine === "openai-edge-tts");
       
       if (!openaiEdgeVoices.length) {
@@ -185,7 +186,9 @@ export class OpenAIEdgeTTS {
         return this.getFallbackVoices();
       }
       
-      return openaiEdgeVoices.map((voice: { name?: string }) => voice?.name).filter(Boolean);
+      const voiceNames = openaiEdgeVoices.map((voice: { name?: string }) => voice?.name).filter(Boolean);
+      logger.info(`Fetched ${voiceNames.length} OpenAI Edge TTS voices from API`);
+      return voiceNames;
     } catch (error) {
       logger.error("Error fetching voices from Dahopevi (using fallback voices):", error);
       return this.getFallbackVoices(); // Always return fallback voices on error
