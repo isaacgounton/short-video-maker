@@ -41,7 +41,7 @@ export const sceneInput = z.object({
 export type SceneInput = z.infer<typeof sceneInput>;
 
 export enum VoiceEnum {
-  // Kokoro voices (original enum values)
+  // Kokoro voices
   af_heart = "af_heart",
   af_alloy = "af_alloy",
   af_aoede = "af_aoede",
@@ -70,81 +70,14 @@ export enum VoiceEnum {
   bf_lily = "bf_lily",
   bm_daniel = "bm_daniel",
   bm_fable = "bm_fable",
-  
-  // Azure EdgeTTS voices
-  "en-US-AriaNeural" = "en-US-AriaNeural",
-  "en-US-JennyNeural" = "en-US-JennyNeural", 
-  "en-US-GuyNeural" = "en-US-GuyNeural",
-  "en-US-AnaNeural" = "en-US-AnaNeural",
-  "en-US-ChristopherNeural" = "en-US-ChristopherNeural",
-  "en-US-EricNeural" = "en-US-EricNeural",
-  "en-US-MichelleNeural" = "en-US-MichelleNeural",
-  "en-US-RogerNeural" = "en-US-RogerNeural",
-  "en-US-SteffanNeural" = "en-US-SteffanNeural",
-  "en-GB-SoniaNeural" = "en-GB-SoniaNeural",
-  "en-GB-RyanNeural" = "en-GB-RyanNeural",
-  "en-GB-LibbyNeural" = "en-GB-LibbyNeural",
-  "en-AU-NatashaNeural" = "en-AU-NatashaNeural",
-  "en-AU-WilliamNeural" = "en-AU-WilliamNeural",
-  "en-CA-ClaraNeural" = "en-CA-ClaraNeural",
-  
-  // French voices
-  "fr-FR-DeniseNeural" = "fr-FR-DeniseNeural",
-  "fr-FR-HenriNeural" = "fr-FR-HenriNeural",
-  "fr-FR-JeromeNeural" = "fr-FR-JeromeNeural",
-  "fr-FR-JosephineNeural" = "fr-FR-JosephineNeural",
-  "fr-CA-AntoineNeural" = "fr-CA-AntoineNeural",
-  "fr-CA-JeanNeural" = "fr-CA-JeanNeural",
-  "fr-CA-SylvieNeural" = "fr-CA-SylvieNeural",
-  
-  // Spanish voices
-  "es-ES-ElviraNeural" = "es-ES-ElviraNeural",
-  "es-ES-AlvaroNeural" = "es-ES-AlvaroNeural",
-  "es-MX-DaliaNeural" = "es-MX-DaliaNeural",
-  "es-MX-JorgeNeural" = "es-MX-JorgeNeural",
-  
-  // German voices
-  "de-DE-KatjaNeural" = "de-DE-KatjaNeural",
-  "de-DE-ConradNeural" = "de-DE-ConradNeural",
-  "de-AT-IngridNeural" = "de-AT-IngridNeural",
-  "de-AT-JonasNeural" = "de-AT-JonasNeural",
-  
-  // Italian voices
-  "it-IT-ElsaNeural" = "it-IT-ElsaNeural",
-  "it-IT-IsabellaNeural" = "it-IT-IsabellaNeural",
-  "it-IT-DiegoNeural" = "it-IT-DiegoNeural",
-  
-  // Portuguese voices
-  "pt-BR-FranciscaNeural" = "pt-BR-FranciscaNeural",
-  "pt-BR-AntonioNeural" = "pt-BR-AntonioNeural",
-  "pt-PT-RaquelNeural" = "pt-PT-RaquelNeural",
-  "pt-PT-DuarteNeural" = "pt-PT-DuarteNeural",
-  
-  // Japanese voices
-  "ja-JP-NanamiNeural" = "ja-JP-NanamiNeural",
-  "ja-JP-KeitaNeural" = "ja-JP-KeitaNeural",
-  "ja-JP-AoiNeural" = "ja-JP-AoiNeural",
-  
-  // Chinese voices
-  "zh-CN-XiaoxiaoNeural" = "zh-CN-XiaoxiaoNeural",
-  "zh-CN-YunxiNeural" = "zh-CN-YunxiNeural",
-  "zh-CN-YunyangNeural" = "zh-CN-YunyangNeural",
-  "zh-TW-HsiaoChenNeural" = "zh-TW-HsiaoChenNeural",
-  "zh-TW-YunJheNeural" = "zh-TW-YunJheNeural",
-  
-  // Arabic voices
-  "ar-SA-ZariyahNeural" = "ar-SA-ZariyahNeural",
-  "ar-SA-HamedNeural" = "ar-SA-HamedNeural",
-  "ar-EG-ShakirNeural" = "ar-EG-ShakirNeural",
-  "ar-EG-SalmaNeural" = "ar-EG-SalmaNeural",
-  
-  // OpenAI TTS voices
-  alloy = "alloy",
-  echo = "echo", 
-  fable = "fable",
-  onyx = "onyx",
-  nova = "nova",
-  shimmer = "shimmer",
+
+  // OpenAI Edge TTS voices
+  alloy = "alloy",         // en-US female
+  echo = "echo",           // en-US male
+  fable = "fable",        // en-GB female
+  onyx = "onyx",          // en-US male
+  nova = "nova",          // en-US male
+  shimmer = "shimmer"     // en-US female
 }
 
 export enum OrientationEnum {
@@ -160,9 +93,8 @@ export enum MusicVolumeEnum {
 }
 
 export enum TTSEngineEnum {
-  kokoro = "kokoro",
-  edgetts = "edge-tts", 
-  streamlabspolly = "streamlabs-polly",
+  kokoro = "kokoro-onnx",
+  chatterbox = "chatterbox",
   openai_edge_tts = "openai-edge-tts",
 }
 
