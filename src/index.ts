@@ -28,23 +28,19 @@ async function main() {
     logger.debug("checking music files");
     musicManager.ensureMusicFilesExist();
   } catch (error: unknown) {
-    logger.error(error, "Error checking music files");
+    logger.error(error, "Missing music files");
     process.exit(1);
   }
 
+  logger.debug("initializing remotion");
+  const remotion = await Remotion.init(config);
+  logger.debug("initializing tts");
   const tts = new TTS(config.ttsApiUrl);
-  const remotion = new Remotion(config);
-  const whisper = new Whisper(config);
-  const ffmpeg = new FFMpeg();
-
-  // Initialize Pexels API if key is provided
-  let pexelsApi: PexelsAPI;
-  if (config.pexelsApiKey) {
-    pexelsApi = new PexelsAPI(config.pexelsApiKey);
-  } else {
-    logger.warn("No Pexels API key provided, using dummy API");
-    pexelsApi = new PexelsAPI("dummy");
-  }
+  logger.debug("initializing whisper");
+  const whisper = await Whisper.init(config);
+  logger.debug("initializing ffmpeg");
+  const ffmpeg = await FFMpeg.init();
+  const pexelsApi = new PexelsAPI(config.pexelsApiKey || "dummy");
 
   logger.debug("initializing the short creator");
   const shortCreator = new ShortCreator(
