@@ -25,7 +25,6 @@ import {
   RenderConfig,
   MusicMoodEnum,
   CaptionPositionEnum,
-  TTSVoice,
   TTSProvider,
   OrientationEnum,
   MusicVolumeEnum,
@@ -46,7 +45,7 @@ const VideoCreator: React.FC = () => {
     music: MusicMoodEnum.chill,
     captionPosition: CaptionPositionEnum.bottom,
     captionBackgroundColor: "blue",
-    voice: TTSVoice.af_heart,
+    voice: "af_heart",
     provider: TTSProvider.Kokoro,
     orientation: OrientationEnum.portrait,
     musicVolume: MusicVolumeEnum.high,
@@ -54,7 +53,7 @@ const VideoCreator: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [voices, setVoices] = useState<TTSVoice[]>([]);
+  const [voices, setVoices] = useState<string[]>([]);
   const [providers, setProviders] = useState<TTSProvider[]>([]);
   const [musicTags, setMusicTags] = useState<MusicMoodEnum[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);

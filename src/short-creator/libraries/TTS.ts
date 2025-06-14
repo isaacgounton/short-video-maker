@@ -11,7 +11,7 @@ export class TTS {
 
   async generate(
     text: string,
-    voice: TTSVoice,
+    voice: string,
     provider: TTSProvider,
     speed: number = 1.0,
     format: string = "wav"
@@ -86,7 +86,7 @@ export class TTS {
     }
   }
 
-  async getAvailableVoices(provider: TTSProvider): Promise<TTSVoice[]> {
+  async getAvailableVoices(provider: TTSProvider): Promise<string[]> {
     try {
       // Use the correct endpoint structure: /voices/{provider}
       const voicesApiUrl = this.baseUrl.includes('/api') ? this.baseUrl : `${this.baseUrl}/api`;
@@ -117,11 +117,11 @@ export class TTS {
     }
   }
 
-  listAvailableVoices(): TTSVoice[] {
+  listAvailableVoices(): string[] {
     return Object.values(TTSVoice);
   }
 
-  private getDefaultVoices(provider: TTSProvider): TTSVoice[] {
+  private getDefaultVoices(provider: TTSProvider): string[] {
     switch (provider) {
       case TTSProvider.Kokoro:
         return [

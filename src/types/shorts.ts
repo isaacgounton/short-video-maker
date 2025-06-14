@@ -117,10 +117,11 @@ export const renderConfig = z.object({
     .optional()
     .describe(
       "Background color of the caption, a valid css color, default is blue",
-    ),  voice: z
-    .nativeEnum(TTSVoice)
+    ),
+  voice: z
+    .string()
     .optional()
-    .describe("Voice to be used for the speech, default is af_heart"),
+    .describe("Voice to be used for the speech, can be any voice available from the TTS provider"),
   provider: z
     .nativeEnum(TTSProvider)
     .optional()

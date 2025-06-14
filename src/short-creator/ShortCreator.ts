@@ -291,11 +291,11 @@ export class ShortCreator {
 
     return videos;
   }
-  public ListAvailableVoices(): TTSVoice[] {
+  public ListAvailableVoices(): string[] {
     return this.tts.listAvailableVoices();
   }
 
-  public async getVoicesForProvider(provider: TTSProvider): Promise<TTSVoice[]> {
+  public async getVoicesForProvider(provider: TTSProvider): Promise<string[]> {
     return this.tts.getAvailableVoices(provider);
   }
 }

@@ -33,6 +33,7 @@ export class APIRouter {
       "/short-video",
       async (req: ExpressRequest, res: ExpressResponse) => {
         try {
+          logger.debug({ body: req.body }, "Received request body");
           const input = validateCreateShortInput(req.body);
 
           logger.info({ input }, "Creating short video");
@@ -46,7 +47,7 @@ export class APIRouter {
             videoId,
           });
         } catch (error: unknown) {
-          logger.error(error, "Error validating input");
+          logger.error({ error, body: req.body }, "Error validating input");
 
           // Handle validation errors specifically
           if (error instanceof Error && error.message.startsWith("{")) {
