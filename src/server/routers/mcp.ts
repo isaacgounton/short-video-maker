@@ -75,7 +75,15 @@ export class MCPRouter {
         guide += "## Best Practices\n\n";
         guide += "Always use `list-voices-for-provider` to get the correct voices for your chosen provider before creating videos.\n";
 
-        return guide;
+        return {
+          contents: [
+            {
+              uri: "voice-provider://guide",
+              text: guide,
+              mimeType: "text/markdown"
+            }
+          ]
+        };
       }
     );
 
