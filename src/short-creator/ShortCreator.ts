@@ -396,8 +396,20 @@ export class ShortCreator {
 
   public async ListAllAvailableVoices(): Promise<Record<string, string[]>> {
     try {
-      const allVoices = await TTSFactory.getAllAvailableVoices();
-      return allVoices as Record<string, string[]>;
+      // Initialize an object to store voices for each engine
+      const allVoices: Record<string, string[]> = {};
+
+      // Get voices for each engine
+      for (const engine of Object.values(TTSEngineEnum)) {
+        try {
+          const ttsService = await TTSFactory.getTTSService(engine);
+          allVoices[engine] = ttsService.listAvailableVoices();
+        } catch (error) {
+          logger.warn({ error, engine }, "Failed to get voices for engine");
+        }
+      }
+
+      return allVoices;
     } catch (error) {
       logger.error({ error }, "Failed to get all available voices");
       return {};

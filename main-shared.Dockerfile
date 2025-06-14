@@ -42,6 +42,7 @@ COPY tsconfig.json tsconfig.build.json vite.config.ts /app/
 COPY src /app/src
 COPY static /app/static
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --no-frozen-lockfile
+RUN pnpm add -D @types/fs-extra @types/node
 RUN pnpm build
 
 FROM base AS prod
