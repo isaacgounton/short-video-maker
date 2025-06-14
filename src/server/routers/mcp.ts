@@ -117,7 +117,7 @@ export class MCPRouter {
       {
         videoId: z.string().describe("The ID of the video"),
       },
-      async ({ videoId }) => {
+      async ({ videoId }: { videoId: string }) => {
         const status = this.shortCreator.status(videoId);
         return {
           content: [
@@ -137,7 +137,7 @@ export class MCPRouter {
         scenes: z.array(sceneInput).describe("Each scene to be created"),
         config: renderConfig.describe("Configuration for rendering the video"),
       },
-      async ({ scenes, config }) => {
+      async ({ scenes, config }: { scenes: any; config: any }) => {
         const videoId = await this.shortCreator.addToQueue(scenes, config);
 
         return {
@@ -179,7 +179,7 @@ export class MCPRouter {
       {
         engine: z.enum(["kokoro", "edge-tts", "streamlabs-polly", "openai-edge-tts"]).describe("TTS engine name"),
       },
-      async ({ engine }) => {
+      async ({ engine }: { engine: string }) => {
         // Use the fast method that doesn't trigger service initialization
         const voices = this.shortCreator.ListAvailableVoicesForEngineFast(engine as any);
         
@@ -383,7 +383,7 @@ export class MCPRouter {
   }
 
   private setupRoutes() {
-    this.router.get("/sse", async (req, res) => {
+    this.router.get("/sse", async (req: any, res: any) => {
       logger.info("SSE GET request received");
 
       const transport = new SSEServerTransport("/mcp/messages", res);
@@ -394,7 +394,7 @@ export class MCPRouter {
       await this.mcpServer.connect(transport);
     });
 
-    this.router.post("/messages", async (req, res) => {
+    this.router.post("/messages", async (req: any, res: any) => {
       logger.info("SSE POST request received");
 
       const sessionId = req.query.sessionId as string;

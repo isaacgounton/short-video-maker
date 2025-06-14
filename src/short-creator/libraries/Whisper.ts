@@ -33,7 +33,7 @@ export class Whisper implements IWhisper {
         model: config.whisperModel,
         folder: path.join(config.whisperInstallPath, "models"),
         printOutput: config.whisperVerbose,
-        onProgress: (downloadedBytes, totalBytes) => {
+        onProgress: (downloadedBytes: number, totalBytes: number) => {
           const progress = `${Math.round((downloadedBytes / totalBytes) * 100)}%`;
           logger.debug(
             { progress, model: config.whisperModel },
@@ -78,19 +78,19 @@ export class Whisper implements IWhisper {
       inputPath: audioPath,
       tokenLevelTimestamps: true,
       printOutput: this.config.whisperVerbose,
-      onProgress: (progress) => {
+      onProgress: (progress: any) => {
         logger.debug({ audioPath }, `Transcribing is ${progress} complete`);
       },
     });
     logger.debug({ audioPath }, "Transcription finished, creating captions");
 
     const captions: Caption[] = [];
-    transcription.forEach((record) => {
+    transcription.forEach((record: any) => {
       if (record.text === "") {
         return;
       }
 
-      record.tokens.forEach((token) => {
+      record.tokens.forEach((token: any) => {
         if (token.text.startsWith("[_TT")) {
           return;
         }

@@ -55,7 +55,7 @@ export class Remotion {
       serveUrl: this.bundled,
       outputLocation,
       inputProps: data,
-      onProgress: ({ progress }) => {
+      onProgress: ({ progress }: { progress: number }) => {
         logger.debug(`Rendering ${id} ${Math.floor(progress * 100)}% complete`);
       },
       // preventing memory issues with docker
@@ -84,7 +84,7 @@ export class Remotion {
       composition,
       serveUrl: this.bundled,
       outputLocation,
-      onProgress: ({ progress }) => {
+      onProgress: ({ progress }: { progress: number }) => {
         logger.debug(
           `Rendering test video: ${Math.floor(progress * 100)}% complete`,
         );
