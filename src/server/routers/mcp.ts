@@ -72,8 +72,16 @@ export class MCPRouter {
         guide += "❌ **Incorrect Usage:**\n";
         guide += "- Provider: `kokoro`, Voice: `en-US-Neural2-D` (this voice doesn't exist in kokoro)\n";
         guide += "- Provider: `openai-edge-tts`, Voice: `af_heart` (this voice doesn't exist in openai-edge-tts)\n\n";
+        guide += "## Predefined Voice Recommendations\n\n";
+        guide += "Use the `get-predefined-voices-by-language` tool to get recommended voices organized by language.\n\n";
+        guide += "**Quick Reference:**\n";
+        guide += "- **English**: kokoro (af_heart - best quality), openai-edge-tts (alloy, echo, fable), chatterbox (Emily.wav, Michael.wav)\n";
+        guide += "- **Other Languages**: Use openai-edge-tts exclusively for French, Spanish, German, Italian, Portuguese, Japanese, Chinese, Arabic\n\n";
         guide += "## Best Practices\n\n";
-        guide += "Always use `list-voices-for-provider` to get the correct voices for your chosen provider before creating videos.\n";
+        guide += "1. Use `get-predefined-voices-by-language` for quick access to recommended voices\n";
+        guide += "2. Use `list-voices-for-provider` to get complete current voice lists\n";
+        guide += "3. For English content: prefer kokoro (af_heart) for best quality\n";
+        guide += "4. For non-English content: use openai-edge-tts provider exclusively\n";
 
         return {
           contents: [
@@ -203,6 +211,68 @@ export class MCPRouter {
                 voiceMapping,
                 guidance: "Each provider has specific voices. Always use list-voices-for-provider to get valid voices for your chosen provider."
               }, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "get-predefined-voices-by-language",
+      "Get predefined voice recommendations organized by language and provider",
+      {},
+      async () => {
+        const predefinedVoices = {
+          "English": {
+            "kokoro": ["af_heart", "af_alloy", "af_aoede"],
+            "openai-edge-tts": ["alloy", "echo", "fable"],
+            "chatterbox": ["Emily.wav", "Michael.wav", "Alice.wav", "Connor.wav", "Olivia.wav", "Ryan.wav"],
+            "note": "Kokoro: af_heart is Grade A quality. OpenAI Edge TTS voices are OpenAI-compatible. Chatterbox uses .wav extension."
+          },
+          "French": {
+            "openai-edge-tts": ["fr-FR-DeniseNeural", "fr-FR-HenriNeural", "fr-CA-AntoineNeural", "fr-CA-SylvieNeural"],
+            "note": "Use openai-edge-tts for French voices. Available through Edge TTS integration."
+          },
+          "Spanish": {
+            "openai-edge-tts": ["es-ES-ElviraNeural", "es-ES-AlvaroNeural", "es-MX-DaliaNeural", "es-MX-JorgeNeural"],
+            "note": "Use openai-edge-tts for Spanish voices. ES = Spain, MX = Mexico variants."
+          },
+          "German": {
+            "openai-edge-tts": ["de-DE-KatjaNeural", "de-DE-ConradNeural", "de-AT-IngridNeural"],
+            "note": "Use openai-edge-tts for German voices. DE = Germany, AT = Austria variants."
+          },
+          "Italian": {
+            "openai-edge-tts": ["it-IT-ElsaNeural", "it-IT-IsabellaNeural", "it-IT-DiegoNeural"],
+            "note": "Use openai-edge-tts for Italian voices."
+          },
+          "Portuguese": {
+            "openai-edge-tts": ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural", "pt-PT-RaquelNeural"],
+            "note": "Use openai-edge-tts for Portuguese voices. BR = Brazil, PT = Portugal variants."
+          },
+          "Japanese": {
+            "openai-edge-tts": ["ja-JP-NanamiNeural", "ja-JP-KeitaNeural", "ja-JP-AoiNeural"],
+            "note": "Use openai-edge-tts for Japanese voices."
+          },
+          "Chinese": {
+            "openai-edge-tts": ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural", "zh-TW-HsiaoChenNeural"],
+            "note": "Use openai-edge-tts for Chinese voices. CN = Mainland China, TW = Taiwan variants."
+          },
+          "Arabic": {
+            "openai-edge-tts": ["ar-SA-ZariyahNeural", "ar-SA-HamedNeural", "ar-EG-ShakirNeural"],
+            "note": "Use openai-edge-tts for Arabic voices. SA = Saudi Arabia, EG = Egypt variants."
+          },
+          "guidance": {
+            "provider_priority": "For English: kokoro (best quality), openai-edge-tts (good variety), chatterbox (backup). For other languages: use openai-edge-tts exclusively.",
+            "voice_selection": "Always verify voice availability with list-voices-for-provider before using.",
+            "format_notes": "Chatterbox voices include .wav extension, others don't."
+          }
+        };
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(predefinedVoices, null, 2),
             },
           ],
         };
