@@ -25,7 +25,8 @@ import {
   RenderConfig,
   MusicMoodEnum,
   CaptionPositionEnum,
-  VoiceEnum,
+  TTSVoice,
+  TTSProvider,
   OrientationEnum,
   MusicVolumeEnum,
 } from "../../types/shorts";
@@ -45,31 +46,39 @@ const VideoCreator: React.FC = () => {
     music: MusicMoodEnum.chill,
     captionPosition: CaptionPositionEnum.bottom,
     captionBackgroundColor: "blue",
-    voice: VoiceEnum.af_heart,
+    voice: TTSVoice.af_heart,
+    provider: TTSProvider.Kokoro,
     orientation: OrientationEnum.portrait,
     musicVolume: MusicVolumeEnum.high,
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [voices, setVoices] = useState<VoiceEnum[]>([]);
+  const [voices, setVoices] = useState<TTSVoice[]>([]);
+  const [providers, setProviders] = useState<TTSProvider[]>([]);
   const [musicTags, setMusicTags] = useState<MusicMoodEnum[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
 
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [voicesResponse, musicResponse] = await Promise.all([
-          axios.get("/api/voices"),
+        const [providersResponse, musicResponse] = await Promise.all([
+          axios.get("/api/tts/providers"),
           axios.get("/api/music-tags"),
         ]);
 
-        setVoices(voicesResponse.data);
+        setProviders(providersResponse.data);
         setMusicTags(musicResponse.data);
+
+        // Fetch voices for the default provider
+        const voicesResponse = await axios.get(
+          `/api/tts/${config.provider}/voices`,
+        );
+        setVoices(voicesResponse.data);
       } catch (err) {
         console.error("Failed to fetch options:", err);
         setError(
-          "Failed to load voices and music options. Please refresh the page.",
+          "Failed to load voice providers and music options. Please refresh the page.",
         );
       } finally {
         setLoadingOptions(false);
@@ -78,6 +87,29 @@ const VideoCreator: React.FC = () => {
 
     fetchOptions();
   }, []);
+
+  // Fetch voices when provider changes
+  useEffect(() => {
+    const fetchVoices = async () => {
+      try {
+        const voicesResponse = await axios.get(
+          `/api/tts/${config.provider}/voices`,
+        );
+        setVoices(voicesResponse.data);
+        // Update selected voice to the first available one for the new provider
+        if (voicesResponse.data.length > 0) {
+          handleConfigChange("voice", voicesResponse.data[0]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch voices:", err);
+        setError("Failed to load voices for the selected provider.");
+      }
+    };
+
+    if (config.provider) {
+      fetchVoices();
+    }
+  }, [config.provider]);
 
   const handleAddScene = () => {
     setScenes([...scenes, { text: "", searchTerms: "" }]);
@@ -305,14 +337,32 @@ const VideoCreator: React.FC = () => {
 
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
-                <InputLabel>Default Voice</InputLabel>
+                <InputLabel>TTS Provider</InputLabel>
+                <Select
+                  value={config.provider}
+                  onChange={(e) => handleConfigChange("provider", e.target.value)}
+                  label="TTS Provider"
+                  required
+                >
+                  {providers.map((provider) => (
+                    <MenuItem key={provider} value={provider}>
+                      {provider}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Voice</InputLabel>
                 <Select
                   value={config.voice}
                   onChange={(e) => handleConfigChange("voice", e.target.value)}
-                  label="Default Voice"
+                  label="Voice"
                   required
                 >
-                  {Object.values(VoiceEnum).map((voice) => (
+                  {voices.map((voice) => (
                     <MenuItem key={voice} value={voice}>
                       {voice}
                     </MenuItem>
