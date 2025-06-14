@@ -3,12 +3,13 @@ import "dotenv/config";
 import os from "os";
 import fs from "fs-extra";
 import pino from "pino";
-import { kokoroModelPrecision, whisperModels } from "./types/shorts";
+import { whisperModels } from "./types/shorts";
 
 const defaultLogLevel: pino.Level = "info";
 const defaultPort = 3123;
 const whisperVersion = "1.7.1";
-const defaultWhisperModel: whisperModels = "medium.en"; // possible options: "tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v1", "large-v2", "large-v3", "large-v3-turbo"
+const defaultWhisperModel: whisperModels = "medium.en";
+const defaultTtsApiUrl = "https://tts.dahopevi.com/api";// possible options: "tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v1", "large-v2", "large-v3", "large-v3-turbo"
 
 // Create the global logger
 export const logger = pino({
@@ -45,7 +46,6 @@ export class Config {
   // docker-specific, performance-related settings to prevent memory issues
   public concurrency?: number;
   public videoCacheSizeInBytes: number | null = null;
-
   constructor() {
     this.dataDirPath =
       process.env.DATA_DIR_PATH ||
@@ -78,10 +78,6 @@ export class Config {
 
     if (process.env.WHISPER_MODEL) {
       this.whisperModel = process.env.WHISPER_MODEL as whisperModels;
-    }
-    if (process.env.KOKORO_MODEL_PRECISION) {
-      this.kokoroModelPrecision = process.env
-        .KOKORO_MODEL_PRECISION as kokoroModelPrecision;
     }
 
     this.concurrency = process.env.CONCURRENCY

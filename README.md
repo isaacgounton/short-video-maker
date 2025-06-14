@@ -1,6 +1,27 @@
 # Description
 
-An open source automated video creation tool for generating short-form video content. Short Video Maker combines text-to-speech, automatic captions, background videos, and music to create engaging short videos from simple text inputs.
+An open source automated video creation tool for generating sh- **Kokoro ONNX**: High-quality neural TTS with multi-language support (EN, JP, CN, ES, FR, etc.)
+- **Chatterbox TTS**: Neural TTS with voice cloning capabilities (English-only)
+- **OpenAI Edge TTS**: Microsoft Edge TTS wrapper with extensive voice catalog supporting 75+ languages-form vid- Multi-language support available through multiple providers:
+  - **Kokoro ONNX**: English, Japanese, Chinese, Spanish, French, and more
+  - **Chatterbox TTS**: English-only
+  - **OpenAI Edge TTS**: 75+ languages including Arabic, German, French, Spanish, Chinese, Japanese, Korean, Hindi, and many more
+- The background videos are sourced from Pexelscontent. Short Video Maker combines text-to-speech, automatic captions, background videos, and music to create engaging short videos from simp-Yes! Extensive multi-language support is now available:
+
+- **Kokoro ONNX provider**: Supports multiple languages including English, Japanese, Chinese, Spanish, French, and more
+- **Chatterbox TTS provider**: Currently English-only
+- **OpenAI Edge TTS provider**: Supports 75+ languages including:
+  - European: German, French, Spanish, Italian, Portuguese, Russian, Dutch, Polish, etc.
+  - Asian: Chinese, Japanese, Korean, Hindi, Thai, Vietnamese, Bengali, etc.
+  - Middle Eastern: Arabic, Hebrew, Persian, Turkish, etc.
+  - African: Afrikaans, Swahili, Zulu, etc.
+  - And many more!
+
+To use other languages, specify `"provider": "kokoro"` or `"provider": "openai-edge-tts"` in your configuration and choose an appropriate voice for your target language.`create-short-video` Creates a short video - the LLM will figure out the right configuration. If you want to use specific configuration, you need to specify those in you prompt.
+- `get-video-status` Somewhat useless, it's meant for checking the status of the video, but since the AI agents aren't really good with the concept of time, you'll probably will end up using the REST API for that anyway.
+- `list-tts-providers` Lists all available TTS (Text-to-Speech) providers: kokoro, chatterbox, openai-edge-tts
+- `list-voices-for-provider` Lists all available voices for a specific TTS provider
+- `list-all-voices` Lists all available voices across all TTS providers text inputs.
 
 This project is meant to provide a free alternative to heavy GPU-power hungry video generation (and a free alternative to expensive, third-party API calls). It doesn't generate a video from scratch based on an image or an image prompt.
 
@@ -64,7 +85,10 @@ You can find example n8n workflows created with the REST/MCP server [in this rep
 # Features
 
 - Generate complete short videos from text prompts
-- Text-to-speech conversion
+- Text-to-speech conversion using Awesome-TTS API with 3 providers:
+  - **Kokoro ONNX**: High-quality neural TTS with multi-language support
+  - **Chatterbox TTS**: Neural TTS with voice cloning capabilities
+  - **OpenAI Edge TTS**: Microsoft Edge TTS wrapper with extensive voice catalog
 - Automatic caption generation and styling
 - Background video search and selection via Pexels
 - Background music with genre/mood selection
@@ -74,7 +98,7 @@ You can find example n8n workflows created with the REST/MCP server [in this rep
 
 Shorts Creator takes simple text inputs and search terms, then:
 
-1. Converts text to speech using Kokoro TTS
+1. Converts text to speech using Awesome-TTS API (Kokoro ONNX, Chatterbox TTS, OpenAI Edge TTS)
 2. Generates accurate captions via Whisper
 3. Finds relevant background videos from Pexels
 4. Composes all elements with Remotion
@@ -216,7 +240,8 @@ If you are using the [Self-hosted AI starter kit](https://github.com/n8n-io/self
 | music | The mood of the background music. Get the available options from the GET `/api/music-tags` endpoint. | random |
 | captionPosition | The position where the captions should be rendered. Possible options: `top`, `center`, `bottom`. Default value | `bottom` |
 | captionBackgroundColor | The background color of the active caption item. | `blue` |
-| voice | The Kokoro voice. | `af_heart` |
+| voice | The TTS voice to use from the selected provider. | `af_heart` |
+| provider | The TTS provider to use. Options: `kokoro`, `chatterbox`, `openai-edge-tts`. | `kokoro` |
 | orientation | The video orientation. Possible options are `portrait` and `landscape` | `portrait` |
 
 # Usage
@@ -264,7 +289,9 @@ curl --location 'localhost:3123/api/short-video' \
     ],
     "config": {
       "paddingBack": 1500,
-      "music": "chill"
+      "music": "chill",
+      "voice": "af_heart",
+      "provider": "kokoro"
     }
 }'
 ```
@@ -361,6 +388,41 @@ curl --location 'localhost:3123/api/voices'
     "bm_daniel",
     "bm_fable"
 ]
+```
+
+### GET `/api/tts-providers`
+
+```bash
+curl --location 'localhost:3123/api/tts-providers'
+```
+
+```bash
+{
+    "providers": [
+        "kokoro",
+        "chatterbox", 
+        "openai-edge-tts"
+    ]
+}
+```
+
+### GET `/api/voices/{provider}`
+
+```bash
+curl --location 'localhost:3123/api/voices/kokoro'
+```
+
+```bash
+{
+    "provider": "kokoro",
+    "voices": [
+        "af_heart",
+        "af_alloy", 
+        "af_aoede",
+        "af_bella",
+        ...kokoro specific voices
+    ]
+}
 ```
 
 ### GET `/api/music-tags`

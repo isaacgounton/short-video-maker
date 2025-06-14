@@ -1,5 +1,58 @@
 import z from "zod";
 
+export enum TTSProvider {
+  Kokoro = "kokoro",
+  Chatterbox = "chatterbox", 
+  OpenAIEdge = "openai-edge-tts"
+}
+
+export enum TTSVoice {
+  // Kokoro voices (from the original VoiceEnum)
+  af_heart = "af_heart",
+  af_alloy = "af_alloy",
+  af_aoede = "af_aoede",
+  af_bella = "af_bella",
+  af_jessica = "af_jessica",
+  af_kore = "af_kore",
+  af_nicole = "af_nicole",
+  af_nova = "af_nova",
+  af_river = "af_river",
+  af_sarah = "af_sarah",
+  af_sky = "af_sky",
+  am_adam = "am_adam",
+  am_echo = "am_echo",
+  am_eric = "am_eric",
+  am_fenrir = "am_fenrir",
+  am_liam = "am_liam",
+  am_michael = "am_michael",
+  am_onyx = "am_onyx",
+  am_puck = "am_puck",
+  am_santa = "am_santa",
+  bf_emma = "bf_emma",
+  bf_isabella = "bf_isabella",
+  bm_george = "bm_george",
+  bm_lewis = "bm_lewis",
+  bf_alice = "bf_alice",
+  bf_lily = "bf_lily",
+  bm_daniel = "bm_daniel",
+  bm_fable = "bm_fable",
+  // Chatterbox voices (example voices)
+  Rachel = "rachel",
+  Domi = "domi", 
+  Bella = "bella",
+  Antoni = "antoni",
+  Elli = "elli",
+  Josh = "josh",
+  Arnold = "arnold",
+  Adam = "adam",
+  Sam = "sam",
+  // OpenAI Edge TTS voices (Microsoft voices)
+  enUSJenny = "en-US-JennyNeural",
+  enUSGuy = "en-US-GuyNeural",
+  enGBSonia = "en-GB-SoniaNeural",
+  enGBRyan = "en-GB-RyanNeural"
+}
+
 export enum MusicMoodEnum {
   sad = "sad",
   melancholic = "melancholic",
@@ -40,37 +93,6 @@ export const sceneInput = z.object({
 });
 export type SceneInput = z.infer<typeof sceneInput>;
 
-export enum VoiceEnum {
-  af_heart = "af_heart",
-  af_alloy = "af_alloy",
-  af_aoede = "af_aoede",
-  af_bella = "af_bella",
-  af_jessica = "af_jessica",
-  af_kore = "af_kore",
-  af_nicole = "af_nicole",
-  af_nova = "af_nova",
-  af_river = "af_river",
-  af_sarah = "af_sarah",
-  af_sky = "af_sky",
-  am_adam = "am_adam",
-  am_echo = "am_echo",
-  am_eric = "am_eric",
-  am_fenrir = "am_fenrir",
-  am_liam = "am_liam",
-  am_michael = "am_michael",
-  am_onyx = "am_onyx",
-  am_puck = "am_puck",
-  am_santa = "am_santa",
-  bf_emma = "bf_emma",
-  bf_isabella = "bf_isabella",
-  bm_george = "bm_george",
-  bm_lewis = "bm_lewis",
-  bf_alice = "bf_alice",
-  bf_lily = "bf_lily",
-  bm_daniel = "bm_daniel",
-  bm_fable = "bm_fable",
-}
-
 export enum OrientationEnum {
   landscape = "landscape",
   portrait = "portrait",
@@ -103,11 +125,14 @@ export const renderConfig = z.object({
     .optional()
     .describe(
       "Background color of the caption, a valid css color, default is blue",
-    ),
-  voice: z
-    .nativeEnum(VoiceEnum)
+    ),  voice: z
+    .nativeEnum(TTSVoice)
     .optional()
     .describe("Voice to be used for the speech, default is af_heart"),
+  provider: z
+    .nativeEnum(TTSProvider)
+    .optional()
+    .describe("The TTS provider to use (Kokoro, Chatterbox, or OpenAI Edge)"),
   orientation: z
     .nativeEnum(OrientationEnum)
     .optional()
@@ -119,7 +144,7 @@ export const renderConfig = z.object({
 });
 export type RenderConfig = z.infer<typeof renderConfig>;
 
-export type Voices = `${VoiceEnum}`;
+export type Voices = `${TTSVoice}`;
 
 export type Video = {
   id: string;
@@ -175,5 +200,4 @@ export type whisperModels =
   | "medium.en"
   | "large-v1"
   | "large-v2"
-  | "large-v3"
-  | "large-v3-turbo";
+  | "large-v3"  | "large-v3-turbo";
