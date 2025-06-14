@@ -1,5 +1,21 @@
 import z from "zod";
 
+export const whisperModels = [
+  "tiny",
+  "tiny.en",
+  "base",
+  "base.en",
+  "small",
+  "small.en",
+  "medium",
+  "medium.en",
+  "large-v1",
+  "large-v2",
+  "large-v3",
+  "large-v3-turbo",
+] as const;
+export type whisperModels = (typeof whisperModels)[number];
+
 export enum TTSProvider {
   Kokoro = "kokoro",
   Chatterbox = "chatterbox", 
@@ -7,7 +23,7 @@ export enum TTSProvider {
 }
 
 export enum TTSVoice {
-  // Kokoro voices (from the original VoiceEnum)
+  // Kokoro voices
   af_heart = "af_heart",
   af_alloy = "af_alloy",
   af_aoede = "af_aoede",
@@ -190,18 +206,3 @@ export type MusicForVideo = Music & {
 
 export type MusicTag = `${MusicMoodEnum}`;
 
-export type kokoroModelPrecision = "fp32" | "fp16" | "q8" | "q4" | "q4f16";
-
-export type whisperModels =
-  | "tiny"
-  | "tiny.en"
-  | "base"
-  | "base.en"
-  | "small"
-  | "small.en"
-  | "medium"
-  | "medium.en"
-  | "large-v1"
-  | "large-v2"
-  | "large-v3"
-  | "large-v3-turbo";

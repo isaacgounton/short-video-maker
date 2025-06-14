@@ -2,7 +2,7 @@
 import path from "path";
 import fs from "fs-extra";
 
-import { Kokoro } from "./short-creator/libraries/Kokoro";
+import { TTS } from "./short-creator/libraries/TTS";
 import { Remotion } from "./short-creator/libraries/Remotion";
 import { Whisper } from "./short-creator/libraries/Whisper";
 import { FFMpeg } from "./short-creator/libraries/FFmpeg";
@@ -12,6 +12,7 @@ import { ShortCreator } from "./short-creator/ShortCreator";
 import { logger } from "./logger";
 import { Server } from "./server/server";
 import { MusicManager } from "./short-creator/music";
+import { TTSProvider, TTSVoice } from "./types/shorts";
 
 async function main() {
   const config = new Config();
@@ -27,25 +28,29 @@ async function main() {
     logger.debug("checking music files");
     musicManager.ensureMusicFilesExist();
   } catch (error: unknown) {
-    logger.error(error, "Missing music files");
+    logger.error(error, "Error checking music files");
     process.exit(1);
   }
 
-  logger.debug("initializing remotion");
-  const remotion = await Remotion.init(config);
-  logger.debug("initializing kokoro");
-  const kokoro = await Kokoro.init(config.kokoroModelPrecision);
-  logger.debug("initializing whisper");
-  const whisper = await Whisper.init(config);
-  logger.debug("initializing ffmpeg");
-  const ffmpeg = await FFMpeg.init();
-  const pexelsApi = new PexelsAPI(config.pexelsApiKey);
+  const tts = new TTS(config.ttsApiUrl);
+  const remotion = new Remotion(config);
+  const whisper = new Whisper(config);
+  const ffmpeg = new FFMpeg();
+
+  // Initialize Pexels API if key is provided
+  let pexelsApi: PexelsAPI;
+  if (config.pexelsApiKey) {
+    pexelsApi = new PexelsAPI(config.pexelsApiKey);
+  } else {
+    logger.warn("No Pexels API key provided, using dummy API");
+    pexelsApi = new PexelsAPI("dummy");
+  }
 
   logger.debug("initializing the short creator");
   const shortCreator = new ShortCreator(
     config,
     remotion,
-    kokoro,
+    tts,
     whisper,
     ffmpeg,
     pexelsApi,
@@ -61,7 +66,8 @@ async function main() {
         "testing if the installation was successful - this may take a while...",
       );
       try {
-        const audioBuffer = (await kokoro.generate("hi", "af_heart")).audio;
+        const audioBuffer = (await tts.generate("hi", TTSVoice.af_heart, TTSProvider.Kokoro))
+          .audio;
         await ffmpeg.createMp3DataUri(audioBuffer);
         await pexelsApi.findVideo(["dog"], 2.4);
         const testVideoPath = path.join(config.tempDirPath, "test.mp4");

@@ -3,7 +3,7 @@ import "dotenv/config";
 import os from "os";
 import fs from "fs-extra";
 import pino from "pino";
-import { kokoroModelPrecision, whisperModels } from "./types/shorts";
+import { whisperModels } from "./types/shorts";
 
 const defaultLogLevel: pino.Level = "info";
 const defaultPort = 3123;
@@ -104,5 +104,3 @@ export class Config {
     }
   }
 }
-
-export const KOKORO_MODEL = "onnx-community/Kokoro-82M-v1.0-ONNX";
