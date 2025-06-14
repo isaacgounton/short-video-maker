@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import VideoList from './pages/VideoList';
 import VideoCreator from './pages/VideoCreator';
+import VideoResearcher from './pages/VideoResearcher';
 import VideoDetails from './pages/VideoDetails';
 import Layout from './components/Layout';
 
@@ -12,6 +13,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<VideoList />} />
           <Route path="/create" element={<VideoCreator />} />
+          <Route path="/research" element={<VideoResearcher />} />
           <Route path="/video/:videoId" element={<VideoDetails />} />
         </Routes>
       </Layout>
@@ -19,4 +21,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App; 
+export default App;

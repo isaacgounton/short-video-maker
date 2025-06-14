@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import VideoIcon from '@mui/icons-material/VideoLibrary';
 import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -53,6 +54,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Typography>
             <Button 
               color="inherit" 
+              startIcon={<SearchIcon />}
+              onClick={() => navigate('/research')}
+              sx={{ mr: 1 }}
+            >
+              AI Research
+            </Button>
+            <Button 
+              color="inherit" 
               startIcon={<AddIcon />}
               onClick={() => navigate('/create')}
             >
@@ -81,4 +90,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-export default Layout; 
+export default Layout;

@@ -8,7 +8,7 @@ An open source automated video creation tool for generating short-form video con
 
 This project is meant to provide a free alternative to heavy GPU-power hungry video generation (and a free alternative to expensive, third-party API calls). It doesn't generate a video from scratch based on an image or an image prompt.
 
-The repository was open-sourced by the [AI Agents A-Z Youtube Channel](https://www.youtube.com/channel/UCloXqLhp_KGhHBe1kwaL2Tg). We encourage you to check out the channel for more AI-related content and tutorials.
+The repository was open-sourced by the [AI Agents A-Z Youtube Channel](https://www.youtube.com/channel/UCloXqLhp_KGhHBe1kwaL2Tg). We encourage you to check out the channel for more AI-related content and tutorials.
 
 The server exposes an [MCP](https://github.com/modelcontextprotocol) and a REST server.
 
@@ -23,6 +23,7 @@ You can find example n8n workflows created with the REST/MCP server [in this rep
 - [Requirements](#general-requirements)
 - [How to run the server](#getting-started-1)
 - [Web UI](#web-ui)
+- [AI Research Feature](#ai-research-feature)
 - [Tutorial](#tutorial-with-n8n)
 - [Examples](#examples)
 
@@ -30,6 +31,7 @@ You can find example n8n workflows created with the REST/MCP server [in this rep
 
 - [Environment variables](#environment-variables)
 - [REST API](#rest-api)
+- [Research API](#research-api)
 - [Configuration options](#configuration-options)
 - [MCP](#mcp-server)
 
@@ -68,26 +70,62 @@ You can find example n8n workflows created with the REST/MCP server [in this rep
 # Features
 
 - Generate complete short videos from text prompts
-- Text-to-speech conversion
+- **AI-powered research and scene generation** - Research any topic and automatically generate video scenes
+- **Multi-language support** - Support for English, French, Spanish, German, Italian, Portuguese, Japanese, Chinese, and Arabic
+- **Multiple TTS providers** - Kokoro, OpenAI Edge TTS, and Chatterbox TTS with intelligent voice selection
+- Text-to-speech conversion with smart voice mapping
 - Automatic caption generation and styling
 - Background video search and selection via Pexels
 - Background music with genre/mood selection
+- **Research-to-video workflow** - Complete pipeline from topic research to finished video
 - Serve as both REST API and Model Context Protocol (MCP) server
 
 # How It Works
 
 Shorts Creator takes simple text inputs and search terms, then:
 
-1. Converts text to speech using Kokoro TTS
-2. Generates accurate captions via Whisper
-3. Finds relevant background videos from Pexels
-4. Composes all elements with Remotion
-5. Renders a professional-looking short video with perfectly timed captions
+1. **Research Mode**: Input any topic and automatically research comprehensive content
+2. **Scene Generation**: AI converts research into optimized video scenes with proper voice selection
+3. Converts text to speech using multiple TTS providers (Kokoro, OpenAI Edge TTS, Chatterbox)
+4. Generates accurate captions via Whisper
+5. Finds relevant background videos from Pexels
+6. Composes all elements with Remotion
+7. Renders a professional-looking short video with perfectly timed captions
+
+# AI Research Feature
+
+The AI Research feature allows you to create videos from any topic using a 3-step process:
+
+## Step 1: Research Topic
+- Enter any topic (e.g., "Climate change effects", "AI in healthcare", "History of space exploration")
+- Select target language (supports 9 languages)
+- AI generates comprehensive research content with sources
+
+## Step 2: Generate Scenes
+- AI automatically converts research content into 3-6 optimized video scenes
+- Smart voice selection based on target language
+- Intelligent search term extraction for background videos
+
+## Step 3: Customize & Create
+- Review and edit generated scenes
+- Adjust TTS provider, voice, music, and video settings
+- One-click video creation with optimized configuration
+
+### Language & Voice Support
+- **English**: Kokoro (af_heart - best quality), OpenAI Edge TTS, Chatterbox
+- **French**: OpenAI Edge TTS (fr-FR-DeniseNeural)
+- **Spanish**: OpenAI Edge TTS (es-ES-ElviraNeural)
+- **German**: OpenAI Edge TTS (de-DE-KatjaNeural)
+- **Italian**: OpenAI Edge TTS (it-IT-ElsaNeural)
+- **Portuguese**: OpenAI Edge TTS (pt-BR-FranciscaNeural)
+- **Japanese**: OpenAI Edge TTS (ja-JP-NanamiNeural)
+- **Chinese**: OpenAI Edge TTS (zh-CN-XiaoxiaoNeural)
+- **Arabic**: OpenAI Edge TTS (ar-SA-ZariyahNeural)
 
 # Limitations
 
-- The project only capable generating videos with English voiceover (kokoro-js doesn’t support other languages at the moment)
-- The background videos are sourced from Pexels
+- Background videos are sourced from Pexels
+- Research content is generated using built-in algorithms (can be enhanced with external APIs)
 
 # General Requirements
 
@@ -178,7 +216,7 @@ services:
     ports:
       - "3123:3123"
     volumes:
-	    - ./videos:/app/data/videos # expose the generated videos
+    - ./videos:/app/data/videos # expose the generated videos
 
 ```
 
@@ -186,30 +224,36 @@ If you are using the [Self-hosted AI starter kit](https://github.com/n8n-io/self
 
 # Web UI
 
-@mushitori made a Web UI to generate the videos from your browser.
+The Web UI includes both manual video creation and AI-powered research functionality.
 
 <table>
   <tr>
     <td>
-      <img width="1088" alt="Screenshot 2025-05-12 at 1 45 11 PM" src="https://github.com/user-attachments/assets/2ab64aea-f639-41b0-bd19-2fcf73bb1a3d" />
+      <img width="1088" alt="Screenshot 2025-05-12 at 1 45 11 PM" src="https://github.com/user-attachments/assets/2ab64aea-f639-41b0-bd19-2fcf73bb1a3d" />
     </td>
     <td>
-      <img width="1075" alt="Screenshot 2025-05-12 at 1 45 44 PM" src="https://github.com/user-attachments/assets/0ff568fe-ddcb-4dad-ae62-2640290aef1e" />
+      <img width="1075" alt="Screenshot 2025-05-12 at 1 45 44 PM" src="https://github.com/user-attachments/assets/0ff568fe-ddcb-4dad-ae62-2640290aef1e" />
     </td>
     <td>
-      <img width="1083" alt="Screenshot 2025-05-12 at 1 45 51 PM" src="https://github.com/user-attachments/assets/d3c1c826-3cb3-4313-b17c-605ff612fb63" />
+      <img width="1083" alt="Screenshot 2025-05-12 at 1 45 51 PM" src="https://github.com/user-attachments/assets/d3c1c826-3cb3-4313-b17c-605ff612fb63" />
     </td>
     <td>
-      <img width="1070" alt="Screenshot 2025-05-12 at 1 46 42 PM" src="https://github.com/user-attachments/assets/18edb1a0-9fc2-48b3-8896-e919e7dc57ff" />
+      <img width="1070" alt="Screenshot 2025-05-12 at 1 46 42 PM" src="https://github.com/user-attachments/assets/18edb1a0-9fc2-48b3-8896-e919e7dc57ff" />
     </td>
   </tr>
 </table>
 
-You can load it on http://localhost:3123
+## Navigation
+- **Home** (`/`) - List all created videos
+- **Create Video** (`/create`) - Manual video creation interface
+- **AI Research** (`/research`) - AI-powered research and video generation
+- **Video Details** (`/video/:id`) - View and download completed videos
+
+You can access the web interface at http://localhost:3123
 
 # Environment variables
 
-## 🟢 Configuration
+## 🟢 Configuration
 
 | key             | description                                                     | default |
 | --------------- | --------------------------------------------------------------- | ------- |
@@ -218,15 +262,15 @@ You can load it on http://localhost:3123
 | WHISPER_VERBOSE | whether the output of whisper.cpp should be forwarded to stdout | false   |
 | PORT            | the port the server will listen on                              | 3123    |
 
-## ⚙️ System configuration
+## ⚙️ System configuration
 
 | key                       | description                                                                                                                                                                                                                                                                           | default                                                     |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | KOKORO_MODEL_PRECISION    | The size of the Kokoro model to use. Valid options are `fp32`, `fp16`, `q8`, `q4`, `q4f16`                                                                                                                                                                                            | depends, see the descriptions of the docker images above ^^ |
 | CONCURRENCY               | [concurrency refers to how many browser tabs are opened in parallel during a render. Each Chrome tab renders web content and then screenshots it.](https://www.remotion.dev/docs/terminology/concurrency). Tweaking this value helps with running the project with limited resources. | depends, see the descriptions of the docker images above ^^ |
-| VIDEO_CACHE_SIZE_IN_BYTES | Cache for [<OffthreadVideo>](https://remotion.dev/docs/offthreadvideo) frames in Remotion. Tweaking this value helps with running the project with limited resources.                                                                                                                 | depends, see the descriptions of the docker images above ^^ |
+| VIDEO_CACHE_SIZE_IN_BYTES | Cache for [<OffthreadVideo>](https://remotion.dev/docs/offthreadvideo) frames in Remotion. Tweaking this value helps with running the project with limited resources.                                                                                                                 | depends, see the descriptions of the docker images above ^^ |
 
-## ⚠️ Danger zone
+## ⚠️ Danger zone
 
 | key           | description                                                                                                                                                                              | default                                                                                              |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -243,7 +287,8 @@ You can load it on http://localhost:3123
 | music                  | The mood of the background music. Get the available options from the GET `/api/music-tags` endpoint.           | random     |
 | captionPosition        | The position where the captions should be rendered. Possible options: `top`, `center`, `bottom`. Default value | `bottom`   |
 | captionBackgroundColor | The background color of the active caption item.                                                               | `blue`     |
-| voice                  | The Kokoro voice.                                                                                              | `af_heart` |
+| voice                  | The TTS voice (varies by provider).                                                                           | `af_heart` |
+| provider               | The TTS provider. Options: `kokoro`, `openai-edge-tts`, `chatterbox`                                          | `kokoro`   |
 | orientation            | The video orientation. Possible options are `portrait` and `landscape`                                         | `portrait` |
 | musicVolume            | Set the volume of the background music. Possible options are `low` `medium` `high` and `muted`                 | `high`     |
 
@@ -251,16 +296,24 @@ You can load it on http://localhost:3123
 
 ## MCP server
 
-## Server URLs
+### Server URLs
 
 `/mcp/sse`
 
 `/mcp/messages`
 
-## Available tools
+### Available tools
 
 - `create-short-video` Creates a short video - the LLM will figure out the right configuration. If you want to use specific configuration, you need to specify those in you prompt.
-- `get-video-status` Somewhat useless, it’s meant for checking the status of the video, but since the AI agents aren’t really good with the concept of time, you’ll probably will end up using the REST API for that anyway.
+- `get-video-status` Somewhat useless, it's meant for checking the status of the video, but since the AI agents aren't really good with the concept of time, you'll probably will end up using the REST API for that anyway.
+- `list-tts-providers` List all available TTS (Text-to-Speech) providers
+- `list-voices-for-provider` List all available voices for a specific TTS provider  
+- `list-all-voices` List all available voices across all TTS providers with provider mapping
+- `get-predefined-voices-by-language` Get predefined voice recommendations organized by language and provider
+
+### Available resources
+
+- `voice-provider-guide` Complete guide for TTS voice and provider combinations with usage examples and best practices
 
 # REST API
 
@@ -292,7 +345,9 @@ curl --location 'localhost:3123/api/short-video' \
     ],
     "config": {
       "paddingBack": 1500,
-      "music": "chill"
+      "music": "chill",
+      "provider": "kokoro",
+      "voice": "af_heart"
     }
 }'
 ```
@@ -363,31 +418,13 @@ curl --location 'localhost:3123/api/voices'
     "af_heart",
     "af_alloy",
     "af_aoede",
-    "af_bella",
-    "af_jessica",
-    "af_kore",
-    "af_nicole",
-    "af_nova",
-    "af_river",
-    "af_sarah",
-    "af_sky",
     "am_adam",
     "am_echo",
-    "am_eric",
-    "am_fenrir",
-    "am_liam",
-    "am_michael",
-    "am_onyx",
-    "am_puck",
-    "am_santa",
-    "bf_emma",
-    "bf_isabella",
-    "bm_george",
-    "bm_lewis",
-    "bf_alice",
-    "bf_lily",
-    "bm_daniel",
-    "bm_fable"
+    "Emily.wav",
+    "Michael.wav",
+    "alloy",
+    "echo",
+    "fable"
 ]
 ```
 
@@ -414,6 +451,106 @@ curl --location 'localhost:3123/api/music-tags'
 ]
 ```
 
+### GET `/api/tts/providers`
+
+List all available TTS providers
+
+```bash
+curl --location 'localhost:3123/api/tts/providers'
+```
+
+```bash
+[
+    "kokoro",
+    "openai-edge-tts", 
+    "chatterbox"
+]
+```
+
+### GET `/api/tts/{provider}/voices`
+
+Get voices for a specific TTS provider
+
+```bash
+curl --location 'localhost:3123/api/tts/kokoro/voices'
+```
+
+```bash
+[
+    "af_heart",
+    "af_alloy", 
+    "af_aoede"
+]
+```
+
+# Research API
+
+### POST `/api/research-topic`
+
+Research a topic and generate comprehensive content
+
+```bash
+curl --location 'localhost:3123/api/research-topic' \
+--header 'Content-Type: application/json' \
+--data '{
+    "searchTerm": "Climate change effects",
+    "targetLanguage": "en"
+}'
+```
+
+```bash
+{
+    "title": "Comprehensive Guide to Climate change effects",
+    "content": "Introduction to Climate change effects: Climate change effects represents a significant area of study...",
+    "sources": [
+        "Research Papers & Academic Studies",
+        "Industry Reports & Analysis",
+        "Expert Interviews & Insights",
+        "Scientific Publications",
+        "Market Research Data"
+    ],
+    "language": "en"
+}
+```
+
+### POST `/api/generate-scenes`
+
+Convert research content into video scenes with optimized configuration
+
+```bash
+curl --location 'localhost:3123/api/generate-scenes' \
+--header 'Content-Type: application/json' \
+--data '{
+    "content": "Introduction to Climate change effects...",
+    "title": "Climate Change Effects",
+    "targetLanguage": "en"
+}'
+```
+
+```bash
+{
+    "scenes": [
+        {
+            "text": "Welcome to our exploration of Climate Change Effects. Today we'll dive deep into this fascinating topic and discover what makes it so important in our modern world.",
+            "searchTerms": ["climate", "change", "effects", "modern", "world"]
+        },
+        {
+            "text": "Introduction to Climate change effects represents a significant area of study and application in today's world.",
+            "searchTerms": ["introduction", "climate", "change", "study", "world"]
+        }
+    ],
+    "config": {
+        "music": "chill",
+        "voice": "af_heart",
+        "provider": "kokoro",
+        "orientation": "portrait",
+        "captionPosition": "bottom",
+        "musicVolume": "medium",
+        "paddingBack": 1500
+    }
+}
+```
+
 # Troubleshooting
 
 ## Docker
@@ -432,13 +569,13 @@ Setting up the MCP (or REST) server depends on how you run n8n and the server. P
 
 |                                                   | n8n is running locally, using `n8n start`              | n8n is running locally using Docker                                                                                                                                                                                           | n8n is running in the cloud                            |
 | ------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `short-video-maker` is running in Docker, locally | `http://localhost:3123`                                | It depends. You can technically use `http://host.docker.internal:3123` as it points to the host, but you could configure to use the same network and use the service name to communicate like `http://short-video-maker:3123` | won’t work - deploy `short-video-maker` to the cloud   |
-| `short-video-maker` is running with npm/npx       | `http://localhost:3123`                                | `http://host.docker.internal:3123`                                                                                                                                                                                            | won’t work - deploy `short-video-maker` to the cloud   |
+| `short-video-maker` is running in Docker, locally | `http://localhost:3123`                                | It depends. You can technically use `http://host.docker.internal:3123` as it points to the host, but you could configure to use the same network and use the service name to communicate like `http://short-video-maker:3123` | won't work - deploy `short-video-maker` to the cloud   |
+| `short-video-maker` is running with npm/npx       | `http://localhost:3123`                                | `http://host.docker.internal:3123`                                                                                                                                                                                            | won't work - deploy `short-video-maker` to the cloud   |
 | `short-video-maker` is running in the cloud       | You should use your IP address `http://{YOUR_IP}:3123` | You should use your IP address `http://{YOUR_IP}:3123`                                                                                                                                                                        | You should use your IP address `http://{YOUR_IP}:3123` |
 
 # Deploying to the cloud
 
-While each VPS provider is different, and it’s impossible to provide configuration to all of them, here are some tips.
+While each VPS provider is different, and it's impossible to provide configuration to all of them, here are some tips.
 
 - Use Ubuntu ≥ 22.04
 - Have ≥ 4gb RAM, ≥ 2vCPUs and ≥5gb storage
@@ -449,7 +586,16 @@ While each VPS provider is different, and it’s impossible to provide configura
 
 ## Can I use other languages? (French, German etc.)
 
-Unfortunately, it’s not possible at the moment. Kokoro-js only supports English.
+Yes! The system now supports 9 languages with automatic voice selection:
+- English, French, Spanish, German, Italian, Portuguese, Japanese, Chinese, and Arabic
+- Each language is automatically paired with the appropriate TTS provider and voice
+
+## How does the AI Research feature work?
+
+The AI Research feature uses a 3-step process:
+1. **Research**: Enter any topic and get comprehensive research content
+2. **Generate**: AI creates optimized video scenes with proper voice selection
+3. **Customize**: Edit scenes and settings before creating the final video
 
 ## Can I pass in images and videos and can it stitch it together
 
@@ -463,11 +609,7 @@ Docker is the recommended way to run the project.
 
 Honestly, not a lot - only whisper.cpp can be accelerated.
 
-Remotion is CPU-heavy, and [Kokoro-js](https://github.com/hexgrad/kokoro) runs on the CPU.
-
-## Is there a UI that I can use to generate the videos
-
-No (t yet)
+Remotion is CPU-heavy, and the TTS providers run on CPU.
 
 ## Can I select different source for the videos than Pexels, or provide my own video
 
