@@ -20,7 +20,7 @@ export class TTS {
     audioLength: number;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/tts`, {
+      const response = await fetch(`${this.baseUrl}/tts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -40,20 +40,27 @@ export class TTS {
 
       const result = await response.json();
       
-      if (!result.success) {
-        throw new Error(`TTS API error: ${result.error}`);
+      if (!result.success && !result.id) {
+        throw new Error(`TTS API error: ${result.error || 'Unknown error'}`);
       }
 
-      // Download the audio file
-      const audioResponse = await fetch(`${this.baseUrl}${result.audio_url}`);
+      // Download the audio file using the correct endpoint structure
+      const audioId = result.id || result.audio_id;
+      if (!audioId) {
+        throw new Error('No audio ID returned from TTS service');
+      }
+      
+      const audioResponse = await fetch(`${this.baseUrl}/audio/${audioId}`);
       if (!audioResponse.ok) {
         throw new Error(`Failed to download audio: ${audioResponse.statusText}`);
       }
 
       const audioBuffer = await audioResponse.arrayBuffer();
       
-      // Use the duration from the API response
-      const audioLength = result.duration_ms ? result.duration_ms / 1000 : text.split(" ").length * 0.3;
+      // Use the duration from the API response or estimate
+      const audioLength = result.duration_ms ? result.duration_ms / 1000 :
+                         result.duration ? result.duration :
+                         text.split(" ").length * 0.3;
 
       logger.debug({ text, voice, provider, audioLength }, "Audio generated with Awesome-TTS API");
 
@@ -78,13 +85,27 @@ export class TTS {
 
   async getAvailableVoices(provider: TTSProvider): Promise<TTSVoice[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/voices/${provider}`);
+      // Use the correct endpoint structure: /voices/{provider}
+      const response = await fetch(`${this.baseUrl}/voices/${provider}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch voices: ${response.statusText}`);
       }
       
       const voices = await response.json();
-      return voices;
+      
+      // If voices is an array of objects with 'name' property, extract just the names
+      if (Array.isArray(voices) && voices.length > 0 && typeof voices[0] === 'object' && voices[0].name) {
+        return voices.map(voice => voice.name as TTSVoice);
+      }
+      
+      // If it's already an array of strings, return as is
+      if (Array.isArray(voices)) {
+        return voices;
+      }
+      
+      // Fallback to default voices
+      logger.warn({ provider, voices }, "Unexpected voice format, using default voices");
+      return this.getDefaultVoices(provider);
     } catch (error) {
       logger.error({ error, provider }, "Failed to fetch available voices");
       // Return default voices as fallback

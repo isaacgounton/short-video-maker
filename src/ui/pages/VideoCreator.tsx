@@ -85,9 +85,14 @@ const VideoCreator: React.FC = () => {
         );
         
         // Handle both array and object responses
-        const voicesData = Array.isArray(voicesResponse.data)
+        let voicesData = Array.isArray(voicesResponse.data)
           ? voicesResponse.data
           : voicesResponse.data.voices || [];
+        
+        // If voices are objects with 'name' property, extract just the names
+        if (voicesData.length > 0 && typeof voicesData[0] === 'object' && voicesData[0].name) {
+          voicesData = voicesData.map(voice => voice.name);
+        }
           
         setVoices(voicesData);
       } catch (err) {
@@ -112,9 +117,14 @@ const VideoCreator: React.FC = () => {
         );
         
         // Handle both array and object responses
-        const voicesData = Array.isArray(voicesResponse.data)
+        let voicesData = Array.isArray(voicesResponse.data)
           ? voicesResponse.data
           : voicesResponse.data.voices || [];
+        
+        // If voices are objects with 'name' property, extract just the names
+        if (voicesData.length > 0 && typeof voicesData[0] === 'object' && voicesData[0].name) {
+          voicesData = voicesData.map(voice => voice.name);
+        }
           
         setVoices(voicesData);
         // Update selected voice to the first available one for the new provider
@@ -383,11 +393,17 @@ const VideoCreator: React.FC = () => {
                   label="Voice"
                   required
                 >
-                  {voices.map((voice) => (
-                    <MenuItem key={voice} value={voice}>
-                      {voice}
-                    </MenuItem>
-                  ))}
+                  {voices.map((voice, index) => {
+                    // Ensure we always have a string value
+                    const voiceValue = typeof voice === 'string' ? voice :
+                                     (voice?.name || `voice-${index}`);
+                    
+                    return (
+                      <MenuItem key={voiceValue} value={voiceValue}>
+                        {voiceValue}
+                      </MenuItem>
+                    );
+                  })}
                 </Select>
               </FormControl>
             </Grid>
