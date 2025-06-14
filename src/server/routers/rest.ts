@@ -263,9 +263,12 @@ export class APIRouter {
           res.status(200).json(voices); // Return array directly
         } catch (error) {
           logger.error(error, "Error fetching voices for provider");
-          res.status(500).json({
-            error: "Failed to fetch voices for provider",
+          // Return default voices as fallback instead of error
+          const defaultVoices = this.shortCreator.ListAvailableVoices().filter(voice => {
+            // Filter voices by provider if needed
+            return true; // For now return all default voices
           });
+          res.status(200).json(defaultVoices);
         }
       },
     );

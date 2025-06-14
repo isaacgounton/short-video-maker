@@ -5,7 +5,7 @@ export class TTS {
   private baseUrl: string;
 
   constructor(baseUrl: string = "https://tts.dahopevi.com") {
-    // Remove /api if it's already included in the base URL
+    // Ensure the baseUrl ends properly - remove trailing /api if present, we'll add endpoints as needed
     this.baseUrl = baseUrl.replace(/\/api\/?$/, "");
   }
 
@@ -20,7 +20,9 @@ export class TTS {
     audioLength: number;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/tts`, {
+      // If baseUrl already includes /api, use it directly, otherwise add /api
+      const apiUrl = this.baseUrl.includes('/api') ? this.baseUrl : `${this.baseUrl}/api`;
+      const response = await fetch(`${apiUrl}/tts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -50,7 +52,8 @@ export class TTS {
         throw new Error('No audio ID returned from TTS service');
       }
       
-      const audioResponse = await fetch(`${this.baseUrl}/audio/${audioId}`);
+      const audioApiUrl = this.baseUrl.includes('/api') ? this.baseUrl : `${this.baseUrl}/api`;
+      const audioResponse = await fetch(`${audioApiUrl}/audio/${audioId}`);
       if (!audioResponse.ok) {
         throw new Error(`Failed to download audio: ${audioResponse.statusText}`);
       }
@@ -86,7 +89,8 @@ export class TTS {
   async getAvailableVoices(provider: TTSProvider): Promise<TTSVoice[]> {
     try {
       // Use the correct endpoint structure: /voices/{provider}
-      const response = await fetch(`${this.baseUrl}/voices/${provider}`);
+      const voicesApiUrl = this.baseUrl.includes('/api') ? this.baseUrl : `${this.baseUrl}/api`;
+      const response = await fetch(`${voicesApiUrl}/voices/${provider}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch voices: ${response.statusText}`);
       }
