@@ -40,20 +40,42 @@ export class TTS {
         throw new Error(`TTS API error: ${response.status} ${response.statusText}`);
       }
 
-      const result = await response.json();
+      // Parse the response - handle both array and object responses
+      const responseData = await response.json();
       
-      if (!result.success && !result.id) {
+      // Check if response is an array (new format) and extract the first successful result
+      const result = Array.isArray(responseData) 
+        ? responseData.find(item => item.success) 
+        : responseData;
+      
+      if (!result) {
+        throw new Error(`TTS API error: No successful result returned`);
+      }
+      
+      if (!result.success) {
         throw new Error(`TTS API error: ${result.error || 'Unknown error'}`);
       }
 
-      // Download the audio file using the correct endpoint structure
-      const audioId = result.id || result.audio_id;
-      if (!audioId) {
-        throw new Error('No audio ID returned from TTS service');
+      // Check for audio_url in the new format
+      let audioUrl = result.audio_url;
+      
+      // For backward compatibility
+      if (!audioUrl) {
+        const audioId = result.id || result.audio_id;
+        if (!audioId) {
+          throw new Error('No audio URL or ID returned from TTS service');
+        }
+        audioUrl = `/audio/${audioId}`;
       }
       
-      const audioApiUrl = this.baseUrl.includes('/api') ? this.baseUrl : `${this.baseUrl}/api`;
-      const audioResponse = await fetch(`${audioApiUrl}/audio/${audioId}`);
+      // Make sure audioUrl is an absolute URL
+      const audioFullUrl = audioUrl.startsWith('http') 
+        ? audioUrl 
+        : `${this.baseUrl}${audioUrl}`;
+      
+      logger.debug({ audioUrl, audioFullUrl }, "Requesting audio from URL");
+      
+      const audioResponse = await fetch(audioFullUrl);
       if (!audioResponse.ok) {
         throw new Error(`Failed to download audio: ${audioResponse.statusText}`);
       }
@@ -62,10 +84,10 @@ export class TTS {
       
       // Use the duration from the API response or estimate
       const audioLength = result.duration_ms ? result.duration_ms / 1000 :
-                         result.duration ? result.duration :
+                         result.duration ? result.duration / 1000 : // Convert ms to seconds if needed
                          text.split(" ").length * 0.3;
 
-      logger.debug({ text, voice, provider, audioLength }, "Audio generated with Awesome-TTS API");
+      logger.debug({ text, voice, provider, audioLength, audioUrl }, "Audio generated with TTS API");
 
       return {
         audio: audioBuffer,
