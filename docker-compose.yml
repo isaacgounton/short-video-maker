@@ -10,5 +10,5 @@ services:
     environment:
       - DEV=false
     ports:
-      - "3123:3123"
+      - "5000:5000"
     entrypoint: ["node", "dist/index.js"]
