@@ -88,34 +88,73 @@ export class TTS {
       // Use the duration from the API response (in milliseconds) or estimate based on text length
       const audioLength = result.duration ? result.duration / 1000 : text.split(" ").length * 0.3;
 
-      // Determine actual format from URL or content type
+      // Determine actual format from content, prioritizing header analysis
       let actualFormat = format; // Default to the requested format
       
-      // Try to detect format from URL
-      const supportedFormats = ['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm'];
+      // First, try to detect format from the actual audio data header
+      const headerBytes = new Uint8Array(audioBuffer.slice(0, 16));
       
-      for (const fmt of supportedFormats) {
-        if (audioUrl.toLowerCase().endsWith(`.${fmt}`)) {
-          actualFormat = fmt;
-          break;
-        }
+      // Check for MP3 header (most common issue)
+      if (
+        (headerBytes[0] === 0x49 && headerBytes[1] === 0x44 && headerBytes[2] === 0x33) || // ID3
+        ((headerBytes[0] === 0xFF) && ((headerBytes[1] & 0xE0) === 0xE0)) || // MPEG frame sync
+        (headerBytes[0] === 0xFF && headerBytes[1] === 0xFB) // Very common MP3 header
+      ) {
+        actualFormat = 'mp3';
+        logger.debug("Detected MP3 format from audio header, overriding URL/content-type detection");
       }
-      
-      // Check content type header from response if available
-      const contentType = audioResponse.headers.get('content-type');
-      if (contentType) {
-        if (contentType.includes('audio/mpeg') || contentType.includes('audio/mp3')) {
-          actualFormat = 'mp3';
-        } else if (contentType.includes('audio/opus')) {
-          actualFormat = 'opus';
-        } else if (contentType.includes('audio/aac')) {
-          actualFormat = 'aac';
-        } else if (contentType.includes('audio/flac')) {
-          actualFormat = 'flac';
-        } else if (contentType.includes('audio/wav') || contentType.includes('audio/wave') || contentType.includes('audio/x-wav')) {
-          actualFormat = 'wav';
-        } else if (contentType.includes('audio/pcm')) {
-          actualFormat = 'pcm';
+      // Check for WAV header - "RIFF" + "WAVE"
+      else if (
+        headerBytes[0] === 0x52 && headerBytes[1] === 0x49 && headerBytes[2] === 0x46 && headerBytes[3] === 0x46 &&
+        headerBytes[8] === 0x57 && headerBytes[9] === 0x41 && headerBytes[10] === 0x56 && headerBytes[11] === 0x45
+      ) {
+        actualFormat = 'wav';
+        logger.debug("Detected WAV format from audio header");
+      }
+      // Check for FLAC header - "fLaC"
+      else if (
+        headerBytes[0] === 0x66 && headerBytes[1] === 0x4C && headerBytes[2] === 0x61 && headerBytes[3] === 0x43
+      ) {
+        actualFormat = 'flac';
+        logger.debug("Detected FLAC format from audio header");
+      }
+      // Check for Ogg/Opus header - "OggS"
+      else if (
+        headerBytes[0] === 0x4F && headerBytes[1] === 0x67 && headerBytes[2] === 0x67 && headerBytes[3] === 0x53
+      ) {
+        actualFormat = 'opus';
+        logger.debug("Detected Opus format from audio header");
+      }
+      // Fallback to content type header if header detection fails
+      else {
+        const contentType = audioResponse.headers.get('content-type');
+        if (contentType) {
+          if (contentType.includes('audio/mpeg') || contentType.includes('audio/mp3')) {
+            actualFormat = 'mp3';
+          } else if (contentType.includes('audio/opus')) {
+            actualFormat = 'opus';
+          } else if (contentType.includes('audio/aac')) {
+            actualFormat = 'aac';
+          } else if (contentType.includes('audio/flac')) {
+            actualFormat = 'flac';
+          } else if (contentType.includes('audio/wav') || contentType.includes('audio/wave') || contentType.includes('audio/x-wav')) {
+            actualFormat = 'wav';
+          } else if (contentType.includes('audio/pcm')) {
+            actualFormat = 'pcm';
+          }
+          logger.debug({ contentType, actualFormat }, "Format detected from content-type header");
+        }
+        
+        // Last resort: try to detect from URL extension
+        if (actualFormat === format) {
+          const supportedFormats = ['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm'];
+          for (const fmt of supportedFormats) {
+            if (audioUrl.toLowerCase().endsWith(`.${fmt}`)) {
+              actualFormat = fmt;
+              logger.debug({ actualFormat }, "Format detected from URL extension");
+              break;
+            }
+          }
         }
       }
       
@@ -126,7 +165,7 @@ export class TTS {
         audioLength, 
         audioUrl, 
         format: actualFormat,
-        contentType 
+        contentType: audioResponse.headers.get('content-type')
       }, "Audio generated with TTS API");
 
       return {

@@ -201,37 +201,54 @@ export class FFMpeg {
   /**
    * Helper method to detect audio format from file buffer header
    * This is a basic implementation that can be expanded for more accurate detection
-   */
-  detectAudioFormat(buffer: ArrayBuffer): string {
-    const header = new Uint8Array(buffer.slice(0, 12));
+   */  detectAudioFormat(buffer: ArrayBuffer): string {
+    // Need enough bytes for thorough header inspection
+    const header = new Uint8Array(buffer.slice(0, 16));
     
-    // Check for WAV header
+    // Log header for debugging
+    logger.debug({ 
+      headerBytes: [...header].map(b => b.toString(16).padStart(2, '0')).join(' '),
+      headerAscii: [...header].map(b => b >= 32 && b <= 126 ? String.fromCharCode(b) : '.').join('')
+    }, "Analyzing audio header");
+    
+    // Check for WAV header - "RIFF" + "WAVE"
     if (
       header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46 &&
       header[8] === 0x57 && header[9] === 0x41 && header[10] === 0x56 && header[11] === 0x45
     ) {
+      // Check WAV format chunk which follows RIFF header
+      // We could validate more WAV subformat details here if needed
+      logger.debug("Detected WAV format from header");
       return 'wav';
     }
     
     // Check for MP3 header (ID3 or MPEG frame sync)
     if (
       (header[0] === 0x49 && header[1] === 0x44 && header[2] === 0x33) || // ID3
-      ((header[0] === 0xFF) && ((header[1] & 0xE0) === 0xE0)) // MPEG frame sync
+      ((header[0] === 0xFF) && ((header[1] & 0xE0) === 0xE0)) || // MPEG frame sync
+      // Check for MP3 without ID3 tag starting with 0xFF 0xFB (MPEG Layer 3)
+      (header[0] === 0xFF && (header[1] & 0xFE) === 0xFA) || // MPEG-1 Layer 3
+      (header[0] === 0xFF && (header[1] & 0xFE) === 0xF2) || // MPEG-2 Layer 3
+      // Also check for some common MP3 frame headers
+      (header[0] === 0xFF && header[1] === 0xFB) // Very common MP3 header
     ) {
+      logger.debug("Detected MP3 format from header");
       return 'mp3';
     }
     
-    // Check for FLAC header
+    // Check for FLAC header - "fLaC"
     if (
       header[0] === 0x66 && header[1] === 0x4C && header[2] === 0x61 && header[3] === 0x43
     ) {
+      logger.debug("Detected FLAC format from header");
       return 'flac';
     }
     
-    // Check for Ogg/Opus header
+    // Check for Ogg/Opus header - "OggS"
     if (
       header[0] === 0x4F && header[1] === 0x67 && header[2] === 0x67 && header[3] === 0x53
     ) {
+      logger.debug("Detected Ogg/Opus format from header");
       return 'opus'; // Could be Vorbis too, would need deeper inspection
     }
     
@@ -239,12 +256,31 @@ export class FFMpeg {
     if (
       (header[0] === 0xFF) && ((header[1] & 0xF6) === 0xF0)
     ) {
+      logger.debug("Detected AAC format from header");
       return 'aac';
     }
     
+    // Check for WEBM/Matroska header (starts with 0x1A 0x45 0xDF 0xA3)
+    if (
+      header[0] === 0x1A && header[1] === 0x45 && header[2] === 0xDF && header[3] === 0xA3
+    ) {
+      logger.debug("Detected WEBM/Matroska format from header");
+      return 'webm';
+    }
+    
+    // Check for some non-standard WAV files that might start with data chunk directly
+    // This is a heuristic approach and may need refinement
+    if (
+      // Look for "data" chunk within the first few bytes
+      (header[0] === 0x64 && header[1] === 0x61 && header[2] === 0x74 && header[3] === 0x61) ||
+      (header[4] === 0x64 && header[5] === 0x61 && header[6] === 0x74 && header[7] === 0x61)
+    ) {
+      logger.debug("Detected possible non-standard WAV format with 'data' chunk");
+      return 'wav';
+    }
+    
     // Default to 'auto' if no match found
-    logger.debug({ headerBytes: [...header].map(b => b.toString(16).padStart(2, '0')).join(' ') }, 
-      "Could not detect audio format from header, defaulting to auto");
+    logger.debug("Could not detect audio format from header, defaulting to auto");
     return 'auto';
   }
 }
