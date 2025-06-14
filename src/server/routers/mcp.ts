@@ -179,9 +179,9 @@ export class MCPRouter {
       {
         engine: z.enum(["kokoro", "edge-tts", "streamlabs-polly", "openai-edge-tts"]).describe("TTS engine name"),
       },
-      async ({ engine }: { engine: string }) => {
+      async ({ engine }: { engine?: string }) => {
         // Use the fast method that doesn't trigger service initialization
-        const voices = this.shortCreator.ListAvailableVoicesForEngineFast(engine as any);
+        const voices = this.shortCreator.ListAvailableVoicesForEngineFast((engine || "kokoro") as any);
         
         return {
           content: [
