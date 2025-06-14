@@ -105,16 +105,22 @@ export class ShortCreator {
     const tempFiles = [];
 
     const orientation: OrientationEnum =
-      config.orientation || OrientationEnum.portrait;
-
-    let index = 0;    for (const scene of inputScenes) {      
+      config.orientation || OrientationEnum.portrait;    let index = 0;
+    for (const scene of inputScenes) {
+      let audioLength: number;
+      let captions: any;
+      let video: any;
+      let tempVideoPath: string;
+      let tempVideoFileName: string;
+      let tempMp3FileName: string;
+      
       try {
         const audio = await this.tts.generate(
           scene.text,
           config.voice ?? TTSVoice.af_heart,
           config.provider ?? TTSProvider.Kokoro
         );
-        let { audioLength } = audio;
+        audioLength = audio.audioLength;
         const { audio: audioStream } = audio;
 
         // add the paddingBack in seconds to the last scene
@@ -124,11 +130,11 @@ export class ShortCreator {
 
         const tempId = cuid();
         const tempWavFileName = `${tempId}.wav`;
-        const tempMp3FileName = `${tempId}.mp3`;
-        const tempVideoFileName = `${tempId}.mp4`;
+        tempMp3FileName = `${tempId}.mp3`;
+        tempVideoFileName = `${tempId}.mp4`;
         const tempWavPath = path.join(this.config.tempDirPath, tempWavFileName);
         const tempMp3Path = path.join(this.config.tempDirPath, tempMp3FileName);
-        const tempVideoPath = path.join(
+        tempVideoPath = path.join(
           this.config.tempDirPath,
           tempVideoFileName,
         );
@@ -136,10 +142,10 @@ export class ShortCreator {
         tempFiles.push(tempWavPath, tempMp3Path);
 
         await this.ffmpeg.saveNormalizedAudio(audioStream, tempWavPath);
-        const captions = await this.whisper.CreateCaption(tempWavPath);
+        captions = await this.whisper.CreateCaption(tempWavPath);
 
         await this.ffmpeg.saveToMp3(audioStream, tempMp3Path);
-        const video = await this.pexelsApi.findVideo(
+        video = await this.pexelsApi.findVideo(
           scene.searchTerms,
           audioLength,
           excludeVideoIds,
@@ -147,49 +153,50 @@ export class ShortCreator {
         );
 
         logger.debug(`Downloading video from ${video.url} to ${tempVideoPath}`);
+
+        await new Promise<void>((resolve, reject) => {
+          const fileStream = fs.createWriteStream(tempVideoPath);
+          https
+            .get(video.url, (response: http.IncomingMessage) => {
+              if (response.statusCode !== 200) {
+                reject(
+                  new Error(`Failed to download video: ${response.statusCode}`),
+                );
+                return;
+              }
+
+              response.pipe(fileStream);
+
+              fileStream.on("finish", () => {
+                fileStream.close();
+                logger.debug(`Video downloaded successfully to ${tempVideoPath}`);
+                resolve();
+              });
+            })
+            .on("error", (err: Error) => {
+              fs.unlink(tempVideoPath, () => {}); // Delete the file if download failed
+              logger.error(err, "Error downloading video:");
+              reject(err);
+            });
+        });
+
+        excludeVideoIds.push(video.id);
+
+        scenes.push({
+          captions,
+          video: `http://localhost:${this.config.port}/api/tmp/${tempVideoFileName}`,
+          audio: {
+            url: `http://localhost:${this.config.port}/api/tmp/${tempMp3FileName}`,
+            duration: audioLength,
+          },
+        });
+
+        totalDuration += audioLength;
       } catch (error) {
         logger.error({ error, scene, config }, "Error processing scene");
         throw error;
       }
 
-      await new Promise<void>((resolve, reject) => {
-        const fileStream = fs.createWriteStream(tempVideoPath);
-        https
-          .get(video.url, (response: http.IncomingMessage) => {
-            if (response.statusCode !== 200) {
-              reject(
-                new Error(`Failed to download video: ${response.statusCode}`),
-              );
-              return;
-            }
-
-            response.pipe(fileStream);
-
-            fileStream.on("finish", () => {
-              fileStream.close();
-              logger.debug(`Video downloaded successfully to ${tempVideoPath}`);
-              resolve();
-            });
-          })
-          .on("error", (err: Error) => {
-            fs.unlink(tempVideoPath, () => {}); // Delete the file if download failed
-            logger.error(err, "Error downloading video:");
-            reject(err);
-          });
-      });
-
-      excludeVideoIds.push(video.id);
-
-      scenes.push({
-        captions,
-        video: `http://localhost:${this.config.port}/api/tmp/${tempVideoFileName}`,
-        audio: {
-          url: `http://localhost:${this.config.port}/api/tmp/${tempMp3FileName}`,
-          duration: audioLength,
-        },
-      });
-
-      totalDuration += audioLength;
       index++;
     }
     if (config.paddingBack) {
