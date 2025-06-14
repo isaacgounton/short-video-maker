@@ -105,7 +105,7 @@ export class ShortCreator {
     const tempFiles = [];
 
     const orientation: OrientationEnum =
-      config.orientation || OrientationEnum.portrait;    let index = 0;
+      config.orientation || OrientationEnum.portrait;      let index = 0;
     for (const scene of inputScenes) {
       let audioLength: number;
       let captions: any;
@@ -114,14 +114,22 @@ export class ShortCreator {
       let tempVideoFileName: string;
       let tempMp3FileName: string;
       
-      try {
+      try {        // Generate audio with the configured provider and voice
+        logger.debug(`Generating audio for scene text: "${scene.text.substring(0, 50)}${scene.text.length > 50 ? '...' : ''}"`);
         const audio = await this.tts.generate(
           scene.text,
           config.voice ?? TTSVoice.af_heart,
           config.provider ?? TTSProvider.Kokoro
         );
         audioLength = audio.audioLength;
-        const { audio: audioStream } = audio;
+        const { audio: audioStream, format: audioFormat } = audio;
+
+        // Validate audio buffer to prevent processing empty audio
+        if (!audioStream || audioStream.byteLength === 0) {
+          throw new Error(`Invalid audio buffer received from TTS. Buffer size: ${audioStream?.byteLength || 0} bytes`);
+        }
+        
+        logger.debug(`Audio generated successfully. Format: ${audioFormat}, Buffer size: ${audioStream.byteLength} bytes, Duration: ${audioLength}s`);
 
         // add the paddingBack in seconds to the last scene
         if (index + 1 === inputScenes.length && config.paddingBack) {
@@ -137,14 +145,23 @@ export class ShortCreator {
         tempVideoPath = path.join(
           this.config.tempDirPath,
           tempVideoFileName,
-        );
-        tempFiles.push(tempVideoPath);
-        tempFiles.push(tempWavPath, tempMp3Path);
+        );        tempFiles.push(tempVideoPath);
+        tempFiles.push(tempWavPath, tempMp3Path);        // Process audio with better error handling
+        try {
+          logger.debug("Saving normalized audio for whisper processing");
+          await this.ffmpeg.saveNormalizedAudio(audioStream, tempWavPath, audioFormat);
+          
+          logger.debug("Generating captions from audio");
+          captions = await this.whisper.CreateCaption(tempWavPath);
+          
+          logger.debug("Saving audio as MP3");
+          await this.ffmpeg.saveToMp3(audioStream, tempMp3Path, audioFormat);
+        } catch (audioError) {
+          logger.error({ error: audioError }, "Error processing audio files");
+          throw new Error(`Failed to process audio: ${audioError instanceof Error ? audioError.message : String(audioError)}`);
+        }
 
-        await this.ffmpeg.saveNormalizedAudio(audioStream, tempWavPath);
-        captions = await this.whisper.CreateCaption(tempWavPath);
-
-        await this.ffmpeg.saveToMp3(audioStream, tempMp3Path);
+        // Find and download video
         video = await this.pexelsApi.findVideo(
           scene.searchTerms,
           audioLength,

@@ -7,6 +7,7 @@ export class TTS {
   constructor(baseUrl: string = "https://tts.dahopevi.com") {
     // Ensure the baseUrl ends properly - remove trailing /api if present, we'll add endpoints as needed
     this.baseUrl = baseUrl.replace(/\/api\/?$/, "");
+    logger.info({ baseUrl: this.baseUrl }, "TTS service URL configured");
   }
 
   async generate(
@@ -18,6 +19,7 @@ export class TTS {
   ): Promise<{
     audio: ArrayBuffer;
     audioLength: number;
+    format: string;
   }> {
     try {
       // If baseUrl already includes /api, use it directly, otherwise add /api
@@ -56,42 +58,81 @@ export class TTS {
         throw new Error(`TTS API error: ${result.error || 'Unknown error'}`);
       }
 
-      // Check for audio_url in the new format
+      // Get audio_url from the response - this is directly a full URL in the new format
       let audioUrl = result.audio_url;
       
-      // For backward compatibility
       if (!audioUrl) {
-        const audioId = result.id || result.audio_id;
-        if (!audioId) {
-          throw new Error('No audio URL or ID returned from TTS service');
-        }
-        audioUrl = `/audio/${audioId}`;
+        throw new Error('No audio URL returned from TTS service');
       }
       
-      // Make sure audioUrl is an absolute URL
-      const audioFullUrl = audioUrl.startsWith('http') 
-        ? audioUrl 
-        : `${this.baseUrl}${audioUrl}`;
+      // Log the audio URL for debugging
+      logger.debug({ audioUrl, provider, voice }, "Requesting audio from URL");
       
-      logger.debug({ audioUrl, audioFullUrl }, "Requesting audio from URL");
-      
-      const audioResponse = await fetch(audioFullUrl);
+      const audioResponse = await fetch(audioUrl);
       if (!audioResponse.ok) {
-        throw new Error(`Failed to download audio: ${audioResponse.statusText}`);
+        throw new Error(`Failed to download audio: ${audioResponse.status} ${audioResponse.statusText}`);
       }
 
       const audioBuffer = await audioResponse.arrayBuffer();
       
-      // Use the duration from the API response or estimate
-      const audioLength = result.duration_ms ? result.duration_ms / 1000 :
-                         result.duration ? result.duration / 1000 : // Convert ms to seconds if needed
-                         text.split(" ").length * 0.3;
+      // Check if we received a valid audio buffer
+      if (!audioBuffer || audioBuffer.byteLength === 0) {
+        throw new Error(`Received empty audio buffer from ${audioUrl}`);
+      }
+      
+      logger.debug({ 
+        audioBufferSize: audioBuffer.byteLength,
+        audioUrl
+      }, "Audio buffer downloaded successfully");
+      
+      // Use the duration from the API response (in milliseconds) or estimate based on text length
+      const audioLength = result.duration ? result.duration / 1000 : text.split(" ").length * 0.3;
 
-      logger.debug({ text, voice, provider, audioLength, audioUrl }, "Audio generated with TTS API");
+      // Determine actual format from URL or content type
+      let actualFormat = format; // Default to the requested format
+      
+      // Try to detect format from URL
+      const supportedFormats = ['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm'];
+      
+      for (const fmt of supportedFormats) {
+        if (audioUrl.toLowerCase().endsWith(`.${fmt}`)) {
+          actualFormat = fmt;
+          break;
+        }
+      }
+      
+      // Check content type header from response if available
+      const contentType = audioResponse.headers.get('content-type');
+      if (contentType) {
+        if (contentType.includes('audio/mpeg') || contentType.includes('audio/mp3')) {
+          actualFormat = 'mp3';
+        } else if (contentType.includes('audio/opus')) {
+          actualFormat = 'opus';
+        } else if (contentType.includes('audio/aac')) {
+          actualFormat = 'aac';
+        } else if (contentType.includes('audio/flac')) {
+          actualFormat = 'flac';
+        } else if (contentType.includes('audio/wav') || contentType.includes('audio/wave') || contentType.includes('audio/x-wav')) {
+          actualFormat = 'wav';
+        } else if (contentType.includes('audio/pcm')) {
+          actualFormat = 'pcm';
+        }
+      }
+      
+      logger.debug({ 
+        text, 
+        voice, 
+        provider, 
+        audioLength, 
+        audioUrl, 
+        format: actualFormat,
+        contentType 
+      }, "Audio generated with TTS API");
 
       return {
         audio: audioBuffer,
         audioLength: audioLength,
+        format: actualFormat
       };
     } catch (error) {
       logger.error({ error, text, voice, provider }, "Failed to generate audio with TTS API");
