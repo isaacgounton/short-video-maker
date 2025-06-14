@@ -298,7 +298,7 @@ export class MCPRouter {
           const availableVoices = await this.shortCreator.getVoicesForProvider(provider);
           const isValid = availableVoices.includes(voice);
           
-          let result = {
+          let result: any = {
             valid: isValid,
             voice,
             provider,
@@ -306,16 +306,10 @@ export class MCPRouter {
           };
           
           if (!isValid) {
-            result = {
-              ...result,
-              message: `Voice '${voice}' is not available for provider '${provider}'`,
-              suggestion: `Use one of these voices instead: ${availableVoices.slice(0, 3).join(', ')}${availableVoices.length > 3 ? '...' : ''}`
-            };
+            result.message = `Voice '${voice}' is not available for provider '${provider}'`;
+            result.suggestion = `Use one of these voices instead: ${availableVoices.slice(0, 3).join(', ')}${availableVoices.length > 3 ? '...' : ''}`;
           } else {
-            result = {
-              ...result,
-              message: `✅ Voice '${voice}' is valid for provider '${provider}'`
-            };
+            result.message = `✅ Voice '${voice}' is valid for provider '${provider}'`;
           }
           
           return {
