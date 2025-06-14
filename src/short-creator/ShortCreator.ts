@@ -107,45 +107,50 @@ export class ShortCreator {
     const orientation: OrientationEnum =
       config.orientation || OrientationEnum.portrait;
 
-    let index = 0;
-    for (const scene of inputScenes) {      const audio = await this.tts.generate(
-        scene.text,
-        config.voice ?? TTSVoice.af_heart,
-        config.provider ?? TTSProvider.Kokoro
-      );
-      let { audioLength } = audio;
-      const { audio: audioStream } = audio;
+    let index = 0;    for (const scene of inputScenes) {      
+      try {
+        const audio = await this.tts.generate(
+          scene.text,
+          config.voice ?? TTSVoice.af_heart,
+          config.provider ?? TTSProvider.Kokoro
+        );
+        let { audioLength } = audio;
+        const { audio: audioStream } = audio;
 
-      // add the paddingBack in seconds to the last scene
-      if (index + 1 === inputScenes.length && config.paddingBack) {
-        audioLength += config.paddingBack / 1000;
+        // add the paddingBack in seconds to the last scene
+        if (index + 1 === inputScenes.length && config.paddingBack) {
+          audioLength += config.paddingBack / 1000;
+        }
+
+        const tempId = cuid();
+        const tempWavFileName = `${tempId}.wav`;
+        const tempMp3FileName = `${tempId}.mp3`;
+        const tempVideoFileName = `${tempId}.mp4`;
+        const tempWavPath = path.join(this.config.tempDirPath, tempWavFileName);
+        const tempMp3Path = path.join(this.config.tempDirPath, tempMp3FileName);
+        const tempVideoPath = path.join(
+          this.config.tempDirPath,
+          tempVideoFileName,
+        );
+        tempFiles.push(tempVideoPath);
+        tempFiles.push(tempWavPath, tempMp3Path);
+
+        await this.ffmpeg.saveNormalizedAudio(audioStream, tempWavPath);
+        const captions = await this.whisper.CreateCaption(tempWavPath);
+
+        await this.ffmpeg.saveToMp3(audioStream, tempMp3Path);
+        const video = await this.pexelsApi.findVideo(
+          scene.searchTerms,
+          audioLength,
+          excludeVideoIds,
+          orientation,
+        );
+
+        logger.debug(`Downloading video from ${video.url} to ${tempVideoPath}`);
+      } catch (error) {
+        logger.error({ error, scene, config }, "Error processing scene");
+        throw error;
       }
-
-      const tempId = cuid();
-      const tempWavFileName = `${tempId}.wav`;
-      const tempMp3FileName = `${tempId}.mp3`;
-      const tempVideoFileName = `${tempId}.mp4`;
-      const tempWavPath = path.join(this.config.tempDirPath, tempWavFileName);
-      const tempMp3Path = path.join(this.config.tempDirPath, tempMp3FileName);
-      const tempVideoPath = path.join(
-        this.config.tempDirPath,
-        tempVideoFileName,
-      );
-      tempFiles.push(tempVideoPath);
-      tempFiles.push(tempWavPath, tempMp3Path);
-
-      await this.ffmpeg.saveNormalizedAudio(audioStream, tempWavPath);
-      const captions = await this.whisper.CreateCaption(tempWavPath);
-
-      await this.ffmpeg.saveToMp3(audioStream, tempMp3Path);
-      const video = await this.pexelsApi.findVideo(
-        scene.searchTerms,
-        audioLength,
-        excludeVideoIds,
-        orientation,
-      );
-
-      logger.debug(`Downloading video from ${video.url} to ${tempVideoPath}`);
 
       await new Promise<void>((resolve, reject) => {
         const fileStream = fs.createWriteStream(tempVideoPath);
