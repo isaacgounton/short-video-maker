@@ -25,6 +25,56 @@ export class MCPRouter {
       },
     });
 
+    // Add voice documentation resource
+    this.mcpServer.resource(
+      "voice-provider-guide",
+      "Complete guide for TTS voice and provider combinations",
+      "text/markdown",
+      async () => {
+        const providers = Object.values(TTSProvider);
+        const voiceMapping: { [provider: string]: string[] } = {};
+        
+        for (const provider of providers) {
+          try {
+            voiceMapping[provider] = await this.shortCreator.getVoicesForProvider(provider);
+          } catch (error) {
+            voiceMapping[provider] = [];
+          }
+        }
+
+        let guide = "# TTS Voice and Provider Guide\n\n";
+        guide += "This guide shows which voices are available for each TTS provider.\n\n";
+        guide += "## Important: Voice-Provider Compatibility\n\n";
+        guide += "Each TTS provider has its own set of voices. You MUST use the correct voice for each provider.\n\n";
+        
+        for (const provider of providers) {
+          guide += `## ${provider.toUpperCase()} Provider\n\n`;
+          guide += `Available voices for ${provider}:\n\n`;
+          
+          if (voiceMapping[provider].length > 0) {
+            for (const voice of voiceMapping[provider]) {
+              guide += `- \`${voice}\`\n`;
+            }
+          } else {
+            guide += "- No voices available or error fetching voices\n";
+          }
+          guide += "\n";
+        }
+        
+        guide += "## Usage Examples\n\n";
+        guide += "✅ **Correct Usage:**\n";
+        guide += "- Provider: `kokoro`, Voice: `af_heart`\n";
+        guide += "- Provider: `openai-edge-tts`, Voice: `en-US-JennyNeural`\n\n";
+        guide += "❌ **Incorrect Usage:**\n";
+        guide += "- Provider: `kokoro`, Voice: `en-US-Neural2-D` (this voice doesn't exist in kokoro)\n";
+        guide += "- Provider: `openai-edge-tts`, Voice: `af_heart` (this voice doesn't exist in openai-edge-tts)\n\n";
+        guide += "## Best Practices\n\n";
+        guide += "Always use `list-voices-for-provider` to get the correct voices for your chosen provider before creating videos.\n";
+
+        return guide;
+      }
+    );
+
     this.setupMCPServer();
     this.setupRoutes();
   }
@@ -119,20 +169,34 @@ export class MCPRouter {
 
     this.mcpServer.tool(
       "list-all-voices",
-      "List all available voices across all TTS providers",
+      "List all available voices across all TTS providers with provider mapping",
       {},
       async () => {
-        const voices = this.shortCreator.ListAvailableVoices();
+        const providers = Object.values(TTSProvider);
+        const voiceMapping: { [provider: string]: string[] } = {};
+        
+        for (const provider of providers) {
+          try {
+            voiceMapping[provider] = await this.shortCreator.getVoicesForProvider(provider);
+          } catch (error) {
+            voiceMapping[provider] = [];
+          }
+        }
+        
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ voices }, null, 2),
+              text: JSON.stringify({ 
+                voiceMapping,
+                guidance: "Each provider has specific voices. Always use list-voices-for-provider to get valid voices for your chosen provider."
+              }, null, 2),
             },
           ],
         };
       },
     );
+
   }
 
   private setupRoutes() {
