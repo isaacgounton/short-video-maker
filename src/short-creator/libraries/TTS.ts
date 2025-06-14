@@ -5,7 +5,8 @@ export class TTS {
   private baseUrl: string;
 
   constructor(baseUrl: string = "https://tts.dahopevi.com") {
-    this.baseUrl = baseUrl;
+    // Remove /api if it's already included in the base URL
+    this.baseUrl = baseUrl.replace(/\/api\/?$/, "");
   }
 
   async generate(
@@ -34,7 +35,7 @@ export class TTS {
       });
 
       if (!response.ok) {
-        throw new Error(`TTS API error: ${response.statusText}`);
+        throw new Error(`TTS API error: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -62,6 +63,15 @@ export class TTS {
       };
     } catch (error) {
       logger.error({ error, text, voice, provider }, "Failed to generate audio with TTS API");
+      
+      // Check if this is a network error or service unavailable
+      if (error instanceof Error &&
+          (error.message.includes('Not Found') ||
+           error.message.includes('fetch failed') ||
+           error.message.includes('404'))) {
+        throw new Error(`TTS service is unavailable. Please check if the TTS service at ${this.baseUrl} is running and accessible. Original error: ${error.message}`);
+      }
+      
       throw error;
     }
   }

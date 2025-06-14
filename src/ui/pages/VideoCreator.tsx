@@ -67,14 +67,29 @@ const VideoCreator: React.FC = () => {
           axios.get("/api/music-tags"),
         ]);
 
-        setProviders(providersResponse.data);
-        setMusicTags(musicResponse.data);
+        // Handle both array and object responses
+        const providersData = Array.isArray(providersResponse.data)
+          ? providersResponse.data
+          : providersResponse.data.providers || [];
+        
+        const musicData = Array.isArray(musicResponse.data)
+          ? musicResponse.data
+          : musicResponse.data.tags || [];
+          
+        setProviders(providersData);
+        setMusicTags(musicData);
 
         // Fetch voices for the default provider
         const voicesResponse = await axios.get(
           `/api/tts/${config.provider}/voices`,
         );
-        setVoices(voicesResponse.data);
+        
+        // Handle both array and object responses
+        const voicesData = Array.isArray(voicesResponse.data)
+          ? voicesResponse.data
+          : voicesResponse.data.voices || [];
+          
+        setVoices(voicesData);
       } catch (err) {
         console.error("Failed to fetch options:", err);
         setError(
@@ -95,10 +110,16 @@ const VideoCreator: React.FC = () => {
         const voicesResponse = await axios.get(
           `/api/tts/${config.provider}/voices`,
         );
-        setVoices(voicesResponse.data);
+        
+        // Handle both array and object responses
+        const voicesData = Array.isArray(voicesResponse.data)
+          ? voicesResponse.data
+          : voicesResponse.data.voices || [];
+          
+        setVoices(voicesData);
         // Update selected voice to the first available one for the new provider
-        if (voicesResponse.data.length > 0) {
-          handleConfigChange("voice", voicesResponse.data[0]);
+        if (voicesData.length > 0) {
+          handleConfigChange("voice", voicesData[0]);
         }
       } catch (err) {
         console.error("Failed to fetch voices:", err);

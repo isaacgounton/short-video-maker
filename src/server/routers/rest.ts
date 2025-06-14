@@ -231,6 +231,45 @@ export class APIRouter {
       },
     );
 
+    // Add the endpoints that frontend is expecting
+    this.router.get(
+      "/tts/providers",
+      (req: ExpressRequest, res: ExpressResponse) => {
+        const providers = Object.values(TTSProvider);
+        res.status(200).json(providers); // Return array directly
+      },
+    );
+
+    this.router.get(
+      "/tts/:provider/voices",
+      async (req: ExpressRequest, res: ExpressResponse) => {
+        try {
+          const { provider } = req.params;
+          if (
+            !provider ||
+            !Object.values(TTSProvider).includes(provider as TTSProvider)
+          ) {
+            res.status(400).json({
+              error:
+                "Valid provider is required. Options: " +
+                Object.values(TTSProvider).join(", "),
+            });
+            return;
+          }
+
+          const voices = await this.shortCreator.getVoicesForProvider(
+            provider as TTSProvider,
+          );
+          res.status(200).json(voices); // Return array directly
+        } catch (error) {
+          logger.error(error, "Error fetching voices for provider");
+          res.status(500).json({
+            error: "Failed to fetch voices for provider",
+          });
+        }
+      },
+    );
+
     this.router.get(
       "/voices/:provider",
       async (req: ExpressRequest, res: ExpressResponse) => {
