@@ -28,8 +28,12 @@ export class MCPRouter {
     // Add voice documentation resource
     this.mcpServer.resource(
       "voice-provider-guide",
-      "Complete guide for TTS voice and provider combinations",
-      "text/markdown",
+      "voice-provider://guide",
+      {
+        name: "Voice Provider Guide",
+        description: "Complete guide for TTS voice and provider combinations",
+        mimeType: "text/markdown"
+      },
       async () => {
         const providers = Object.values(TTSProvider);
         const voiceMapping: { [provider: string]: string[] } = {};
