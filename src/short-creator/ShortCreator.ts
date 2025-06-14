@@ -6,7 +6,7 @@ import path from "path";
 import https from "https";
 import http from "http";
 
-import { Kokoro } from "./libraries/Kokoro";
+import { TTS } from "./libraries/TTS";
 import { Remotion } from "./libraries/Remotion";
 import { Whisper } from "./libraries/Whisper";
 import { FFMpeg } from "./libraries/FFmpeg";
@@ -14,10 +14,12 @@ import { PexelsAPI } from "./libraries/Pexels";
 import { Config } from "../config";
 import { logger } from "../logger";
 import { MusicManager } from "./music";
-import type {
+import {
   SceneInput,
   RenderConfig,
   Scene,
+  TTSVoice,
+  TTSProvider,
   VideoStatus,
   MusicMoodEnum,
   MusicTag,
@@ -29,11 +31,10 @@ export class ShortCreator {
     sceneInput: SceneInput[];
     config: RenderConfig;
     id: string;
-  }[] = [];
-  constructor(
+  }[] = [];  constructor(
     private config: Config,
     private remotion: Remotion,
-    private kokoro: Kokoro,
+    private tts: TTS,
     private whisper: Whisper,
     private ffmpeg: FFMpeg,
     private pexelsApi: PexelsAPI,
@@ -107,10 +108,10 @@ export class ShortCreator {
       config.orientation || OrientationEnum.portrait;
 
     let index = 0;
-    for (const scene of inputScenes) {
-      const audio = await this.kokoro.generate(
+    for (const scene of inputScenes) {      const audio = await this.tts.generate(
         scene.text,
-        config.voice ?? "af_heart",
+        config.voice ?? TTSVoice.af_heart,
+        config.provider ?? TTSProvider.Kokoro
       );
       let { audioLength } = audio;
       const { audio: audioStream } = audio;
@@ -290,8 +291,11 @@ export class ShortCreator {
 
     return videos;
   }
+  public ListAvailableVoices(): TTSVoice[] {
+    return this.tts.listAvailableVoices();
+  }
 
-  public ListAvailableVoices(): string[] {
-    return this.kokoro.listAvailableVoices();
+  public async getVoicesForProvider(provider: TTSProvider): Promise<TTSVoice[]> {
+    return this.tts.getAvailableVoices(provider);
   }
 }

@@ -76,7 +76,7 @@ COPY package.json /app/
 ENV DATA_DIR_PATH=/app/data
 ENV DOCKER=true
 ENV WHISPER_MODEL=tiny.en
-ENV KOKORO_MODEL_PRECISION=q4
+ENV TTS_API_URL=https://tts.dahopevi.com/api
 # number of chrome tabs to use for rendering
 ENV CONCURRENCY=1
 # video cache - 2000MB

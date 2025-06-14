@@ -1,5 +1,32 @@
 import z from "zod";
 
+export enum TTSProvider {
+  Kokoro = "kokoro",
+  Chatterbox = "chatterbox", 
+  OpenAIEdge = "openai-edge-tts"
+}
+
+export enum TTSVoice {
+  // Kokoro voices (from the original VoiceEnum)
+  af_heart = "af_heart",
+  af_alloy = "af_alloy",
+  af_aoede = "af_aoede",
+  af_bella = "af_bella",
+  am_adam = "am_adam",
+  am_echo = "am_echo",
+  am_eric = "am_eric",
+  // Chatterbox voices
+  Rachel = "rachel",
+  Domi = "domi", 
+  Bella = "bella",
+  Josh = "josh",
+  // OpenAI Edge TTS voices
+  enUSJenny = "en-US-JennyNeural",
+  enUSGuy = "en-US-GuyNeural",
+  enGBSonia = "en-GB-SoniaNeural",
+  enGBRyan = "en-GB-RyanNeural"
+}
+
 export enum MusicMoodEnum {
   sad = "sad",
   melancholic = "melancholic",
@@ -103,11 +130,14 @@ export const renderConfig = z.object({
     .optional()
     .describe(
       "Background color of the caption, a valid css color, default is blue",
-    ),
-  voice: z
-    .nativeEnum(VoiceEnum)
+    ),  voice: z
+    .nativeEnum(TTSVoice)
     .optional()
     .describe("Voice to be used for the speech, default is af_heart"),
+  provider: z
+    .nativeEnum(TTSProvider)
+    .optional()
+    .describe("The TTS provider to use (Kokoro, Chatterbox, or OpenAI Edge)"),
   orientation: z
     .nativeEnum(OrientationEnum)
     .optional()
@@ -118,8 +148,6 @@ export const renderConfig = z.object({
     .describe("Volume of the music, default is high"),
 });
 export type RenderConfig = z.infer<typeof renderConfig>;
-
-export type Voices = `${VoiceEnum}`;
 
 export type Video = {
   id: string;

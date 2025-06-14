@@ -1,0 +1,26 @@
+[
+  {
+    "name": "af_heart",
+    "gender": "female",
+    "locale": "en-US",
+    "engine": "kokoro",
+    "description": "American Female - Heart (Grade A)",
+    "grade": "A"
+  },
+  {
+    "name": "af_alloy",
+    "gender": "female",
+    "locale": "en-US",
+    "engine": "kokoro",
+    "description": "American Female - Alloy (Grade C)",
+    "grade": "C"
+  },
+  {
+    "name": "af_aoede",
+    "gender": "female",
+    "locale": "en-US",
+    "engine": "kokoro",
+    "description": "American Female - Aoede (Grade C+)",
+    "grade": "C+"
+  }
+]

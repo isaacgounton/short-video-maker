@@ -8,7 +8,8 @@ import { kokoroModelPrecision, whisperModels } from "./types/shorts";
 const defaultLogLevel: pino.Level = "info";
 const defaultPort = 3123;
 const whisperVersion = "1.7.1";
-const defaultWhisperModel: whisperModels = "medium.en"; // possible options: "tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v1", "large-v2", "large-v3", "large-v3-turbo"
+const defaultWhisperModel: whisperModels = "medium.en";
+const defaultTtsApiUrl = "https://tts.dahopevi.com/api";// possible options: "tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v1", "large-v2", "large-v3", "large-v3-turbo"
 
 // Create the global logger
 const versionNumber = process.env.npm_package_version;
@@ -43,9 +44,8 @@ export class Config {
   public port: number;
   public runningInDocker: boolean;
   public devMode: boolean;
-  public whisperVersion: string = whisperVersion;
-  public whisperModel: whisperModels = defaultWhisperModel;
-  public kokoroModelPrecision: kokoroModelPrecision = "fp32";
+  public whisperVersion: string = whisperVersion;  public whisperModel: whisperModels = defaultWhisperModel;
+  public ttsApiUrl: string = defaultTtsApiUrl;
 
   // docker-specific, performance-related settings to prevent memory issues
   public concurrency?: number;
@@ -83,12 +83,8 @@ export class Config {
 
     if (process.env.WHISPER_MODEL) {
       this.whisperModel = process.env.WHISPER_MODEL as whisperModels;
-    }
-    if (process.env.KOKORO_MODEL_PRECISION) {
-      this.kokoroModelPrecision = process.env
-        .KOKORO_MODEL_PRECISION as kokoroModelPrecision;
-    }
-
+    }    this.ttsApiUrl = process.env.TTS_API_URL || defaultTtsApiUrl;
+    
     this.concurrency = process.env.CONCURRENCY
       ? parseInt(process.env.CONCURRENCY)
       : undefined;

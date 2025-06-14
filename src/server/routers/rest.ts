@@ -10,6 +10,7 @@ import { validateCreateShortInput } from "../validator";
 import { ShortCreator } from "../../short-creator/ShortCreator";
 import { logger } from "../../logger";
 import { Config } from "../../config";
+import { TTSProvider } from "../../types/shorts";
 
 // todo abstract class
 export class APIRouter {
@@ -217,6 +218,44 @@ export class APIRouter {
           logger.error(error, "Error getting video");
           res.status(404).json({
             error: "Video not found",
+          });
+        }
+      },
+    );
+
+    this.router.get(
+      "/tts-providers",
+      (req: ExpressRequest, res: ExpressResponse) => {
+        const providers = Object.values(TTSProvider);
+        res.status(200).json({ providers });
+      },
+    );
+
+    this.router.get(
+      "/voices/:provider",
+      async (req: ExpressRequest, res: ExpressResponse) => {
+        try {
+          const { provider } = req.params;
+          if (
+            !provider ||
+            !Object.values(TTSProvider).includes(provider as TTSProvider)
+          ) {
+            res.status(400).json({
+              error:
+                "Valid provider is required. Options: " +
+                Object.values(TTSProvider).join(", "),
+            });
+            return;
+          }
+
+          const voices = await this.shortCreator.getVoicesForProvider(
+            provider as TTSProvider,
+          );
+          res.status(200).json({ provider, voices });
+        } catch (error) {
+          logger.error(error, "Error fetching voices for provider");
+          res.status(500).json({
+            error: "Failed to fetch voices for provider",
           });
         }
       },

@@ -5,7 +5,7 @@ import z from "zod";
 
 import { ShortCreator } from "../../short-creator/ShortCreator";
 import { logger } from "../../logger";
-import { renderConfig, sceneInput } from "../../types/shorts";
+import { renderConfig, sceneInput, TTSProvider } from "../../types/shorts";
 
 export class MCPRouter {
   router: express.Router;
@@ -64,6 +64,70 @@ export class MCPRouter {
             {
               type: "text",
               text: videoId,
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "list-tts-providers",
+      "List all available TTS (Text-to-Speech) providers",
+      {},
+      async () => {
+        const providers = Object.values(TTSProvider);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ providers }, null, 2),
+            },
+          ],
+        };
+      },
+    );
+
+    this.mcpServer.tool(
+      "list-voices-for-provider",
+      "List all available voices for a specific TTS provider",
+      {
+        provider: z.nativeEnum(TTSProvider).describe("The TTS provider to get voices for"),
+      },
+      async ({ provider }) => {
+        try {
+          const voices = await this.shortCreator.getVoicesForProvider(provider);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ provider, voices }, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error fetching voices for provider ${provider}: ${error instanceof Error ? error.message : "Unknown error"}`,
+              },
+            ],
+          };
+        }
+      },
+    );
+
+    this.mcpServer.tool(
+      "list-all-voices",
+      "List all available voices across all TTS providers",
+      {},
+      async () => {
+        const voices = this.shortCreator.ListAvailableVoices();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ voices }, null, 2),
             },
           ],
         };
