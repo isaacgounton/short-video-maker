@@ -226,8 +226,15 @@ export class MCPRouter {
           "English": {
             "kokoro": ["af_heart", "af_alloy", "af_aoede"],
             "openai-edge-tts": ["alloy", "echo", "fable"],
-            "chatterbox": ["Emily.wav", "Michael.wav", "Alice.wav", "Connor.wav", "Olivia.wav", "Ryan.wav"],
-            "note": "Kokoro: af_heart is Grade A quality. OpenAI Edge TTS voices are OpenAI-compatible. Chatterbox uses .wav extension."
+            "chatterbox": [
+              "Abigail.wav", "Adrian.wav", "Alexander.wav", "Alice.wav", "Austin.wav",
+              "Axel.wav", "Connor.wav", "Cora.wav", "Elena.wav", "Eli.wav",
+              "Emily.wav", "Everett.wav", "Gabriel.wav", "Gianna.wav", "Henry.wav",
+              "Ian.wav", "Jade.wav", "Jeremiah.wav", "Jordan.wav", "Julian.wav",
+              "Layla.wav", "Leonardo.wav", "Michael.wav", "Miles.wav", "Olivia.wav",
+              "Ryan.wav", "Taylor.wav", "Thomas.wav"
+            ],
+            "note": "Kokoro: af_heart is Grade A quality. OpenAI Edge TTS supports many more voices than shown here - use list-voices-for-provider to get complete list. Chatterbox uses .wav extension."
           },
           "French": {
             "openai-edge-tts": ["fr-FR-DeniseNeural", "fr-FR-HenriNeural", "fr-CA-AntoineNeural", "fr-CA-SylvieNeural"],
@@ -276,6 +283,59 @@ export class MCPRouter {
             },
           ],
         };
+      },
+    );
+
+    this.mcpServer.tool(
+      "validate-voice-provider-combination",
+      "Validate if a voice is compatible with a TTS provider before creating a video",
+      {
+        voice: z.string().describe("The voice to validate"),
+        provider: z.nativeEnum(TTSProvider).describe("The TTS provider to validate against"),
+      },
+      async ({ voice, provider }) => {
+        try {
+          const availableVoices = await this.shortCreator.getVoicesForProvider(provider);
+          const isValid = availableVoices.includes(voice);
+          
+          let result = {
+            valid: isValid,
+            voice,
+            provider,
+            availableVoices
+          };
+          
+          if (!isValid) {
+            result = {
+              ...result,
+              message: `Voice '${voice}' is not available for provider '${provider}'`,
+              suggestion: `Use one of these voices instead: ${availableVoices.slice(0, 3).join(', ')}${availableVoices.length > 3 ? '...' : ''}`
+            };
+          } else {
+            result = {
+              ...result,
+              message: `✅ Voice '${voice}' is valid for provider '${provider}'`
+            };
+          }
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error validating voice-provider combination: ${error instanceof Error ? error.message : "Unknown error"}`,
+              },
+            ],
+          };
+        }
       },
     );
 

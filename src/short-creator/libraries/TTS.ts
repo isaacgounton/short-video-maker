@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { logger } from "../../config";
 import { TTSProvider, TTSVoice } from "../../types/shorts";
 
@@ -39,7 +41,8 @@ export class TTS {
       });
 
       if (!response.ok) {
-        throw new Error(`TTS API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`TTS API error: Provider error: HTTP ${response.status} - ${errorText}`);
       }
 
       // Parse the response - handle both array and object responses
@@ -224,29 +227,27 @@ export class TTS {
   }
 
   private getDefaultVoices(provider: TTSProvider): string[] {
+    // Use hardcoded fallbacks based on the actual voice config files
+    // The real voices will be fetched from the TTS API via getAvailableVoices()
     switch (provider) {
       case TTSProvider.Kokoro:
-        return [
-          TTSVoice.af_heart,
-          TTSVoice.af_alloy,
-          TTSVoice.af_bella,
-          TTSVoice.am_adam,
-          TTSVoice.am_echo,
-        ];
+        // From kokoro_voices.json
+        return ["af_heart", "af_alloy", "af_aoede"];
       case TTSProvider.Chatterbox:
+        // From chatterbox-predefined-voices.json
         return [
-          TTSVoice.Rachel,  // These are example voices
-          TTSVoice.Bella,
-          TTSVoice.Josh,
+          "Abigail.wav", "Adrian.wav", "Alexander.wav", "Alice.wav", "Austin.wav",
+          "Axel.wav", "Connor.wav", "Cora.wav", "Elena.wav", "Eli.wav",
+          "Emily.wav", "Everett.wav", "Gabriel.wav", "Gianna.wav", "Henry.wav",
+          "Ian.wav", "Jade.wav", "Jeremiah.wav", "Jordan.wav", "Julian.wav",
+          "Layla.wav", "Leonardo.wav", "Michael.wav", "Miles.wav", "Olivia.wav",
+          "Ryan.wav", "Taylor.wav", "Thomas.wav"
         ];
       case TTSProvider.OpenAIEdge:
-        return [
-          TTSVoice.enUSJenny,
-          TTSVoice.enUSGuy,
-          TTSVoice.enGBSonia,
-        ];
+        // From openai_edge_tts_voices.json - but this should be expanded via the TTS API
+        return ["alloy", "echo", "fable"];
       default:
-        return Object.values(TTSVoice);
+        return ["af_heart"];
     }
   }
 }

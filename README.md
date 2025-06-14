@@ -451,36 +451,23 @@ curl --location 'localhost:3123/api/music-tags'
 ]
 ```
 
-### GET `/api/tts/providers`
-
-List all available TTS providers
-
-```bash
-curl --location 'localhost:3123/api/tts/providers'
-```
-
-```bash
-[
-    "kokoro",
-    "openai-edge-tts", 
-    "chatterbox"
-]
-```
-
-### GET `/api/tts/{provider}/voices`
+### GET `/api/voices/{provider}`
 
 Get voices for a specific TTS provider
 
 ```bash
-curl --location 'localhost:3123/api/tts/kokoro/voices'
+curl --location 'localhost:3123/api/voices/kokoro'
 ```
 
 ```bash
-[
-    "af_heart",
-    "af_alloy", 
-    "af_aoede"
-]
+{
+    "provider": "kokoro",
+    "voices": [
+        "af_heart",
+        "af_alloy", 
+        "af_aoede"
+    ]
+}
 ```
 
 # Research API
@@ -552,6 +539,23 @@ curl --location 'localhost:3123/api/generate-scenes' \
 ```
 
 # Troubleshooting
+
+## Voice-Provider Compatibility Errors
+
+If you encounter errors like `"Invalid voice 'af_heart'"` when using `openai-edge-tts` provider, this means you're trying to use a voice that doesn't exist for that provider.
+
+**The Problem**: Each TTS provider has its own set of voices. You cannot use a Kokoro voice (like `af_heart`) with the OpenAI Edge TTS provider.
+
+**The Solution**: The system now automatically validates voice-provider combinations and selects appropriate defaults. However, you can also:
+
+1. **Use the MCP validation tool**: `validate-voice-provider-combination` to check compatibility before creating videos
+2. **Check available voices**: Use `list-voices-for-provider` to see what voices are available for each provider
+3. **Use recommended voices**:
+   - **Kokoro**: `af_heart`, `af_alloy`, `af_aoede`
+   - **OpenAI Edge TTS**: `alloy`, `echo`, `fable` (plus many more via TTS API)
+   - **Chatterbox**: 28 voices available including `Emily.wav`, `Michael.wav`, `Alice.wav`, `Connor.wav`, `Olivia.wav`, `Ryan.wav`, etc.
+
+**Auto-correction**: The system will automatically select a compatible voice if you specify an incompatible one, and log a warning message.
 
 ## Docker
 

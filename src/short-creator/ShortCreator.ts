@@ -114,12 +114,31 @@ export class ShortCreator {
       let tempVideoFileName: string;
       let tempMp3FileName: string;
       
-      try {        // Generate audio with the configured provider and voice
+      try {
+        // Generate audio with the configured provider and voice
         logger.debug(`Generating audio for scene text: "${scene.text.substring(0, 50)}${scene.text.length > 50 ? '...' : ''}"`);
+        
+        // Determine the provider and validate voice compatibility
+        const provider = config.provider ?? TTSProvider.Kokoro;
+        let voice = config.voice;
+        
+        // If no voice is specified, or if the specified voice is incompatible with the provider,
+        // select a default voice for the provider
+        if (!voice || !await this.isVoiceCompatibleWithProvider(voice, provider)) {
+          voice = await this.getDefaultVoiceForProvider(provider);
+          if (config.voice && config.voice !== voice) {
+            logger.warn({
+              originalVoice: config.voice,
+              selectedVoice: voice,
+              provider
+            }, "Original voice is incompatible with provider, using default voice");
+          }
+        }
+        
         const audio = await this.tts.generate(
           scene.text,
-          config.voice ?? TTSVoice.af_heart,
-          config.provider ?? TTSProvider.Kokoro
+          voice,
+          provider
         );
         audioLength = audio.audioLength;
         const { audio: audioStream, format: audioFormat } = audio;
@@ -326,5 +345,41 @@ export class ShortCreator {
 
   public async getVoicesForProvider(provider: TTSProvider): Promise<string[]> {
     return this.tts.getAvailableVoices(provider);
+  }
+
+  private async isVoiceCompatibleWithProvider(voice: string, provider: TTSProvider): Promise<boolean> {
+    try {
+      const availableVoices = await this.tts.getAvailableVoices(provider);
+      return availableVoices.includes(voice);
+    } catch (error) {
+      logger.warn({ voice, provider, error }, "Error checking voice compatibility, assuming incompatible");
+      return false;
+    }
+  }
+
+  private async getDefaultVoiceForProvider(provider: TTSProvider): Promise<string> {
+    try {
+      const availableVoices = await this.tts.getAvailableVoices(provider);
+      if (availableVoices.length === 0) {
+        throw new Error(`No voices available for provider ${provider}`);
+      }
+      
+      // Return the first available voice as default
+      return availableVoices[0];
+    } catch (error) {
+      logger.error({ provider, error }, "Error getting default voice for provider");
+      
+      // Fallback to hardcoded defaults based on provider
+      switch (provider) {
+        case TTSProvider.Kokoro:
+          return TTSVoice.af_heart;
+        case TTSProvider.Chatterbox:
+          return TTSVoice.Rachel;
+        case TTSProvider.OpenAIEdge:
+          return "alloy"; // Use string literal since enum might not have this
+        default:
+          return TTSVoice.af_heart;
+      }
+    }
   }
 }
