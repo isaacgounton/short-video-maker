@@ -9,6 +9,7 @@ services:
       - .env
     environment:
       - DEV=false
+      - DOCKER=true
     ports:
       - "3123:3123"
     entrypoint: ["node", "dist/index.js"]

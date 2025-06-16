@@ -8,7 +8,7 @@ import http from "http";
 
 import { TTS } from "./libraries/TTS";
 import { Remotion } from "./libraries/Remotion";
-import { Whisper } from "./libraries/Whisper";
+import { Transcription } from "./libraries/Transcription";
 import { FFMpeg } from "./libraries/FFmpeg";
 import { PexelsAPI } from "./libraries/Pexels";
 import { Config } from "../config";
@@ -31,11 +31,13 @@ export class ShortCreator {
     sceneInput: SceneInput[];
     config: RenderConfig;
     id: string;
-  }[] = [];  constructor(
+  }[] = [];
+
+  constructor(
     private config: Config,
     private remotion: Remotion,
     private tts: TTS,
-    private whisper: Whisper,
+    private transcription: Transcription,
     private ffmpeg: FFMpeg,
     private pexelsApi: PexelsAPI,
     private musicManager: MusicManager,
@@ -105,7 +107,9 @@ export class ShortCreator {
     const tempFiles = [];
 
     const orientation: OrientationEnum =
-      config.orientation || OrientationEnum.portrait;      let index = 0;
+      config.orientation || OrientationEnum.portrait;
+
+    let index = 0;
     for (const scene of inputScenes) {
       let audioLength: number;
       let captions: any;
@@ -164,20 +168,41 @@ export class ShortCreator {
         tempVideoPath = path.join(
           this.config.tempDirPath,
           tempVideoFileName,
-        );        tempFiles.push(tempVideoPath);
-        tempFiles.push(tempWavPath, tempMp3Path);        // Process audio with better error handling
+        );
+
+        tempFiles.push(tempVideoPath);
+        tempFiles.push(tempWavPath, tempMp3Path);
+
+        // Process audio and generate captions
         try {
-          logger.debug("Saving normalized audio for whisper processing");
-          await this.ffmpeg.saveNormalizedAudio(audioStream, tempWavPath, audioFormat);
-          
-          logger.debug("Generating captions from audio");
-          captions = await this.whisper.CreateCaption(tempWavPath);
-          
           logger.debug("Saving audio as MP3");
           await this.ffmpeg.saveToMp3(audioStream, tempMp3Path, audioFormat);
+          
+          // Use dahopevi transcription service for multilingual support
+          logger.debug("Generating captions with dahopevi transcription service");
+          
+          // Get voice locale to determine language for transcription
+          const voiceConfigs = [
+            require("../../voices/kokoro_voices.json"),
+            require("../../voices/openai_edge_tts_voices.json"),
+          ];
+          
+          const voiceLocale = Transcription.getVoiceLocale(voice, voiceConfigs);
+          const language = voiceLocale ? Transcription.getLanguageFromVoice(voiceLocale) : undefined;
+          
+          logger.debug({ voice, voiceLocale, language }, "Detected language for transcription");
+          
+          // Transcribe using the MP3 file URL (since dahopevi needs URL access)
+          const mp3Url = `http://localhost:${this.config.port}/api/tmp/${tempMp3FileName}`;
+          captions = await this.transcription.transcribeFromUrl(mp3Url, {
+            language,
+            wordTimestamps: true,
+            maxWordsPerLine: 8
+          });
+          
         } catch (audioError) {
-          logger.error({ error: audioError }, "Error processing audio files");
-          throw new Error(`Failed to process audio: ${audioError instanceof Error ? audioError.message : String(audioError)}`);
+          logger.error({ error: audioError }, "Error processing audio files or generating captions");
+          throw new Error(`Failed to generate captions: ${audioError instanceof Error ? audioError.message : String(audioError)}`);
         }
 
         // Find and download video
@@ -339,6 +364,7 @@ export class ShortCreator {
 
     return videos;
   }
+  
   public ListAvailableVoices(): string[] {
     return this.tts.listAvailableVoices();
   }

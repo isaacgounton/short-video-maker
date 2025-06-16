@@ -3,13 +3,11 @@ import "dotenv/config";
 import os from "os";
 import fs from "fs-extra";
 import pino from "pino";
-import { whisperModels } from "./types/shorts";
 
 const defaultLogLevel: pino.Level = "info";
 const defaultPort = 3123;
-const whisperVersion = "1.7.1";
-const defaultWhisperModel: whisperModels = "medium.en";
-const defaultTtsApiUrl = "https://tts.dahopevi.com/api";// possible options: "tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v1", "large-v2", "large-v3", "large-v3-turbo"
+const defaultTtsApiUrl = "https://tts.dahopevi.com/api";
+const defaultTranscriptionApiUrl = "https://api.dahopevi.com";
 
 // Create the global logger
 const versionNumber = process.env.npm_package_version;
@@ -33,19 +31,18 @@ export class Config {
   private staticDirPath: string;
 
   public installationSuccessfulPath: string;
-  public whisperInstallPath: string;
   public videosDirPath: string;
   public tempDirPath: string;
   public packageDirPath: string;
   public musicDirPath: string;
   public pexelsApiKey: string;
   public logLevel: pino.Level;
-  public whisperVerbose: boolean;
   public port: number;
   public runningInDocker: boolean;
   public devMode: boolean;
-  public whisperVersion: string = whisperVersion;  public whisperModel: whisperModels = defaultWhisperModel;
   public ttsApiUrl: string = defaultTtsApiUrl;
+  public transcriptionApiUrl: string = defaultTranscriptionApiUrl;
+  public transcriptionApiKey: string;
 
   // docker-specific, performance-related settings to prevent memory issues
   public concurrency?: number;
@@ -57,7 +54,6 @@ export class Config {
       path.join(os.homedir(), ".ai-agents-az-video-generator");
     this.libsDirPath = path.join(this.dataDirPath, "libs");
 
-    this.whisperInstallPath = path.join(this.libsDirPath, "whisper");
     this.videosDirPath = path.join(this.dataDirPath, "videos");
     this.tempDirPath = path.join(this.dataDirPath, "temp");
     this.installationSuccessfulPath = path.join(
@@ -76,14 +72,13 @@ export class Config {
 
     this.pexelsApiKey = process.env.PEXELS_API_KEY as string;
     this.logLevel = (process.env.LOG_LEVEL || defaultLogLevel) as pino.Level;
-    this.whisperVerbose = process.env.WHISPER_VERBOSE === "true";
     this.port = process.env.PORT ? parseInt(process.env.PORT) : defaultPort;
     this.runningInDocker = process.env.DOCKER === "true";
     this.devMode = process.env.DEV === "true";
 
-    if (process.env.WHISPER_MODEL) {
-      this.whisperModel = process.env.WHISPER_MODEL as whisperModels;
-    }    this.ttsApiUrl = process.env.TTS_API_URL || defaultTtsApiUrl;
+    this.ttsApiUrl = process.env.TTS_API_URL || defaultTtsApiUrl;
+    this.transcriptionApiUrl = process.env.TRANSCRIPTION_API_URL || defaultTranscriptionApiUrl;
+    this.transcriptionApiKey = process.env.DAHOPEVI_API_KEY || "";
     
     this.concurrency = process.env.CONCURRENCY
       ? parseInt(process.env.CONCURRENCY)

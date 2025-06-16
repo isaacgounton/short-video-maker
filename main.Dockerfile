@@ -1,34 +1,11 @@
-FROM ubuntu:22.04 AS install-whisper
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt update
-# whisper install dependencies
-RUN apt install -y \
-    git \
-    build-essential \
-    wget \
-    cmake \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-WORKDIR /whisper
-RUN git clone https://github.com/ggml-org/whisper.cpp.git .
-RUN git checkout v1.7.1
-RUN make
-WORKDIR /whisper/models
-RUN sh ./download-ggml-model.sh base.en
-
 FROM node:22-bookworm-slim AS base
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
 RUN apt update
 RUN apt install -y \
-      # whisper dependencies
-      git \
-      wget \
-      cmake \
+      # ffmpeg for audio processing
       ffmpeg \
       curl \
-      make \
-      libsdl2-dev \
       # remotion dependencies
       libnss3 \
       libdbus-1-3 \
@@ -67,7 +44,6 @@ RUN pnpm build
 
 FROM base
 COPY static /app/static
-COPY --from=install-whisper /whisper /app/data/libs/whisper
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
 COPY package.json /app/
@@ -75,8 +51,8 @@ COPY package.json /app/
 # app configuration via environment variables
 ENV DATA_DIR_PATH=/app/data
 ENV DOCKER=true
-ENV WHISPER_MODEL=base.en
 ENV TTS_API_URL=https://tts.dahopevi.com/api
+ENV TRANSCRIPTION_API_URL=https://api.dahopevi.com
 # number of chrome tabs to use for rendering
 ENV CONCURRENCY=1
 # video cache - 2000MB

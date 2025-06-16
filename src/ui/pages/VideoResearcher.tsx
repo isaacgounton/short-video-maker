@@ -313,9 +313,18 @@ const VideoResearcher: React.FC = () => {
               {researchResult.title}
             </Typography>
             
-            <Typography variant="body2" paragraph>
-              {researchResult.content.substring(0, 300)}...
-            </Typography>
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="body2">
+                  {researchResult.content.substring(0, 200)}...
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+                  {researchResult.content}
+                </Typography>
+              </AccordionDetails>
+            </Accordion>
             
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" gutterBottom>

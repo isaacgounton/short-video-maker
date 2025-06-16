@@ -4,7 +4,7 @@ import fs from "fs-extra";
 
 import { TTS } from "./short-creator/libraries/TTS";
 import { Remotion } from "./short-creator/libraries/Remotion";
-import { Whisper } from "./short-creator/libraries/Whisper";
+import { Transcription } from "./short-creator/libraries/Transcription";
 import { FFMpeg } from "./short-creator/libraries/FFmpeg";
 import { PexelsAPI } from "./short-creator/libraries/Pexels";
 import { Config } from "./config";
@@ -36,8 +36,8 @@ async function main() {
   const remotion = await Remotion.init(config);
   logger.debug("initializing tts");
   const tts = new TTS(config.ttsApiUrl);
-  logger.debug("initializing whisper");
-  const whisper = await Whisper.init(config);
+  logger.debug("initializing transcription");
+  const transcription = new Transcription(config);
   logger.debug("initializing ffmpeg");
   const ffmpeg = await FFMpeg.init();
   const pexelsApi = new PexelsAPI(config.pexelsApiKey || "dummy");
@@ -47,7 +47,7 @@ async function main() {
     config,
     remotion,
     tts,
-    whisper,
+    transcription,
     ffmpeg,
     pexelsApi,
     musicManager,
