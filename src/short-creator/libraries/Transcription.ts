@@ -60,97 +60,161 @@ export class Transcription {
         throw new Error("DAHOPEVI_API_KEY is required for transcription. Please set the environment variable.");
       }
 
-      const payload: any = {
-        media_url: mediaUrl,
-        task: "transcribe",
-        include_text: true,
-        include_segments: true,
-        include_srt: false,
-        word_timestamps: options.wordTimestamps || true,
-        response_type: "direct",
-        language: options.language
-      };
-
-      // Only include max_words_per_line if we're including SRT (as per API docs)
-      if (options.maxWordsPerLine && payload.include_srt) {
-        payload.max_words_per_line = options.maxWordsPerLine;
-      }
-
-      logger.debug({ 
-        mediaUrl, 
-        language: options.language,
-        payload 
-      }, "Starting transcription with dahopevi API");
-
-      const response = await fetch(`${this.baseUrl}/v1/media/transcribe`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": this.apiKey,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Transcription API error: HTTP ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
+      // Check if the URL is localhost-based (which won't be accessible from external services)
+      const isLocalUrl = mediaUrl.includes('localhost') || mediaUrl.includes('127.0.0.1');
       
-      if (result.code !== 200) {
-        throw new Error(`Transcription failed: ${result.message || 'Unknown error'}`);
+      if (isLocalUrl) {
+        logger.debug({ mediaUrl }, "Detected localhost URL, using file upload method directly");
+        return await this.transcribeFromUrlViaUpload(mediaUrl, options);
       }
 
-      const transcriptionData: TranscriptionResponse = result.response;
-      
-      if (!transcriptionData.segments || transcriptionData.segments.length === 0) {
-        logger.warn({ mediaUrl }, "No segments returned from transcription");
-        return [];
-      }
-
-      // Convert segments to Caption format
-      const captions: Caption[] = [];
-      
-      for (const segment of transcriptionData.segments) {
-        if (!segment.text || segment.text.trim() === "") {
-          continue;
-        }
-
-        // If word timestamps are available, create captions for each word
-        if (segment.words && segment.words.length > 0) {
-          for (const word of segment.words) {
-            if (word.word.trim() === "") continue;
-            
-            captions.push({
-              text: word.word,
-              startMs: Math.round(word.start * 1000),
-              endMs: Math.round(word.end * 1000),
-            });
-          }
+      // For public URLs, try URL-based transcription first
+      try {
+        return await this.transcribeFromUrlDirect(mediaUrl, options);
+      } catch (urlError: any) {
+        // Check if this is a connection error (which indicates the transcription service can't reach our server)
+        const isConnectionError = urlError.message && (
+          urlError.message.includes('Connection refused') ||
+          urlError.message.includes('ECONNREFUSED') ||
+          urlError.message.includes('NewConnectionError') ||
+          urlError.message.includes('HTTPConnectionPool')
+        );
+        
+        if (isConnectionError) {
+          logger.warn({ 
+            error: urlError.message, 
+            mediaUrl 
+          }, "URL-based transcription failed due to connection issues, attempting file upload fallback");
+          
+          // If URL-based fails due to connectivity, try file upload as fallback
+          return await this.transcribeFromUrlViaUpload(mediaUrl, options);
         } else {
-          // Fallback: create a single caption for the entire segment
-          captions.push({
-            text: segment.text.trim(),
-            startMs: Math.round(segment.start * 1000),
-            endMs: Math.round(segment.end * 1000),
-          });
+          // If it's a different error, just rethrow it
+          throw urlError;
         }
       }
-
-      logger.debug({ 
-        mediaUrl, 
-        captionsCount: captions.length,
-        language: options.language 
-      }, "Transcription completed successfully");
-
-      return captions;
     } catch (error) {
       logger.error({ 
         error, 
         mediaUrl, 
         language: options.language 
       }, "Failed to transcribe audio with dahopevi API");
+      throw error;
+    }
+  }
+
+  private async transcribeFromUrlDirect(
+    mediaUrl: string, 
+    options: TranscriptionOptions = {}
+  ): Promise<Caption[]> {
+    const payload: any = {
+      media_url: mediaUrl,
+      task: "transcribe",
+      include_text: true,
+      include_segments: true,
+      include_srt: false,
+      word_timestamps: options.wordTimestamps || true,
+      response_type: "direct",
+      language: options.language
+    };
+
+    // Only include max_words_per_line if we're including SRT (as per API docs)
+    if (options.maxWordsPerLine && payload.include_srt) {
+      payload.max_words_per_line = options.maxWordsPerLine;
+    }
+
+    logger.debug({ 
+      mediaUrl, 
+      language: options.language,
+      payload 
+    }, "Starting transcription with dahopevi API (URL method)");
+
+    const response = await fetch(`${this.baseUrl}/v1/media/transcribe`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": this.apiKey,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Transcription API error: HTTP ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+      
+    if (result.code !== 200) {
+      throw new Error(`Transcription failed: ${result.message || 'Unknown error'}`);
+    }
+
+    const transcriptionData: TranscriptionResponse = result.response;
+    return this.processTranscriptionResponse(transcriptionData, mediaUrl);
+  }
+
+  private async transcribeFromUrlViaUpload(
+    mediaUrl: string, 
+    options: TranscriptionOptions = {}
+  ): Promise<Caption[]> {
+    try {
+      logger.debug({ mediaUrl }, "Attempting file upload transcription fallback");
+      
+      // Download the file from the URL
+      const response = await fetch(mediaUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download media file: HTTP ${response.status}`);
+      }
+      
+      const fileBuffer = await response.arrayBuffer();
+      const blob = new Blob([fileBuffer], { type: 'audio/mpeg' });
+      
+      // Create form data for multipart upload
+      const formData = new FormData();
+      formData.append('file', blob, 'audio.mp3');
+      formData.append('task', 'transcribe');
+      formData.append('include_text', 'true');
+      formData.append('include_segments', 'true');
+      formData.append('include_srt', 'false');
+      formData.append('word_timestamps', options.wordTimestamps ? 'true' : 'false');
+      formData.append('response_type', 'direct');
+      
+      if (options.language) {
+        formData.append('language', options.language);
+      }
+
+      logger.debug({ 
+        language: options.language,
+        fileSize: fileBuffer.byteLength 
+      }, "Uploading file for transcription");
+
+      const uploadResponse = await fetch(`${this.baseUrl}/v1/media/transcribe`, {
+        method: "POST",
+        headers: {
+          "x-api-key": this.apiKey,
+        },
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`File upload transcription error: HTTP ${uploadResponse.status} - ${errorText}`);
+      }
+
+      const result = await uploadResponse.json();
+      
+      if (result.code !== 200) {
+        throw new Error(`File upload transcription failed: ${result.message || 'Unknown error'}`);
+      }
+
+      const transcriptionData: TranscriptionResponse = result.response;
+      return this.processTranscriptionResponse(transcriptionData, mediaUrl);
+    } catch (error: any) {
+      logger.error({ 
+        error, 
+        mediaUrl, 
+        language: options.language 
+      }, "File upload transcription failed");
       throw error;
     }
   }
@@ -167,6 +231,49 @@ export class Transcription {
       "Audio files need to be accessible via HTTP URL for dahopevi transcription. " +
       "Consider serving temporary files via HTTP or uploading to cloud storage."
     );
+  }
+
+  private processTranscriptionResponse(transcriptionData: TranscriptionResponse, mediaUrl: string): Caption[] {
+    if (!transcriptionData.segments || transcriptionData.segments.length === 0) {
+      logger.warn({ mediaUrl }, "No segments returned from transcription");
+      return [];
+    }
+
+    // Convert segments to Caption format
+    const captions: Caption[] = [];
+    
+    for (const segment of transcriptionData.segments) {
+      if (!segment.text || segment.text.trim() === "") {
+        continue;
+      }
+
+      // If word timestamps are available, create captions for each word
+      if (segment.words && segment.words.length > 0) {
+        for (const word of segment.words) {
+          if (word.word.trim() === "") continue;
+          
+          captions.push({
+            text: word.word,
+            startMs: Math.round(word.start * 1000),
+            endMs: Math.round(word.end * 1000),
+          });
+        }
+      } else {
+        // Fallback: create a single caption for the entire segment
+        captions.push({
+          text: segment.text.trim(),
+          startMs: Math.round(segment.start * 1000),
+          endMs: Math.round(segment.end * 1000),
+        });
+      }
+    }
+
+    logger.debug({ 
+      mediaUrl, 
+      captionsCount: captions.length,
+    }, "Transcription completed successfully");
+
+    return captions;
   }
 
   /**
