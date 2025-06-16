@@ -60,7 +60,7 @@ export class Transcription {
         throw new Error("DAHOPEVI_API_KEY is required for transcription. Please set the environment variable.");
       }
 
-      const payload = {
+      const payload: any = {
         media_url: mediaUrl,
         task: "transcribe",
         include_text: true,
@@ -68,9 +68,13 @@ export class Transcription {
         include_srt: false,
         word_timestamps: options.wordTimestamps || true,
         response_type: "direct",
-        language: options.language,
-        max_words_per_line: options.maxWordsPerLine || 8
+        language: options.language
       };
+
+      // Only include max_words_per_line if we're including SRT (as per API docs)
+      if (options.maxWordsPerLine && payload.include_srt) {
+        payload.max_words_per_line = options.maxWordsPerLine;
+      }
 
       logger.debug({ 
         mediaUrl, 
