@@ -14,7 +14,7 @@ export class FFMpeg {
     outputPath: string,
     inputFormat: string = 'auto'
   ): Promise<string> {
-    logger.debug({ inputFormat }, "Normalizing audio for Whisper");
+    logger.debug({ inputFormat }, "Normalizing audio for transcription");
     
     // Validate the audio buffer
     if (!audio || audio.byteLength === 0) {
