@@ -177,20 +177,30 @@ export class ShortCreator {
         try {
           logger.debug("Saving audio as MP3");
           await this.ffmpeg.saveToMp3(audioStream, tempMp3Path, audioFormat);
-          
-          // Use dahopevi transcription service for multilingual support
+            // Use dahopevi transcription service for multilingual support
           logger.debug("Generating captions with dahopevi transcription service");
           
           // Get voice locale to determine language for transcription
-          const voiceConfigs = [
-            require("../../voices/kokoro_voices.json"),
-            require("../../voices/openai_edge_tts_voices.json"),
-          ];
+          let voiceLocale: string | undefined;
+          let language: string | undefined;
           
-          const voiceLocale = Transcription.getVoiceLocale(voice, voiceConfigs);
-          const language = voiceLocale ? Transcription.getLanguageFromVoice(voiceLocale) : undefined;
-          
-          logger.debug({ voice, voiceLocale, language }, "Detected language for transcription");
+          try {
+            // Get voice locale dynamically from TTS service instead of static files
+            const voiceWithLocale = await this.tts.getVoiceWithLocale(voice, provider);            if (voiceWithLocale && voiceWithLocale.locale) {
+              voiceLocale = voiceWithLocale.locale;
+              language = Transcription.getLanguageFromVoice(voiceLocale);
+              logger.debug({ voice, voiceLocale, language }, "Detected language from TTS API");
+            } else {
+              // Fallback: try to load from static files for any provider that doesn't support locale API
+              voiceLocale = await this.getVoiceLocaleFromFiles(voice);
+              if (voiceLocale) {
+                language = Transcription.getLanguageFromVoice(voiceLocale);
+              }
+              logger.debug({ voice, voiceLocale, language }, "Detected language from static files fallback");
+            }
+          } catch (error) {
+            logger.warn({ error, voice, provider }, "Could not detect voice language, transcription may be less accurate");
+          }
           
           // Transcribe using the MP3 file URL (since dahopevi needs URL access)
           const mp3Url = `http://localhost:${this.config.port}/api/tmp/${tempMp3FileName}`;
@@ -407,5 +417,50 @@ export class ShortCreator {
           return TTSVoice.af_heart;
       }
     }
+  }
+
+  /**
+   * Fallback method to get voice locale from static files
+   */
+  private async getVoiceLocaleFromFiles(voice: string): Promise<string | undefined> {
+    const voiceConfigs: any[] = [];
+    
+    // Try to load all 3 voice config files
+    const voiceFiles = [
+      "voices/kokoro_voices.json",
+      "voices/openai_edge_tts_voices.json", 
+      "voices/chatterbox-predefined-voices.json"
+    ];
+    
+    // Try multiple possible paths for voice config files
+    const possibleBasePaths = ["", "../", "../../"];
+    
+    for (const file of voiceFiles) {
+      for (const basePath of possibleBasePaths) {
+        try {
+          const filePath = path.resolve(basePath + file);
+          if (fs.existsSync(filePath)) {
+            const data = fs.readFileSync(filePath, "utf8");
+            const parsed = JSON.parse(data);
+            
+            // Handle different file formats
+            if (Array.isArray(parsed)) {
+              voiceConfigs.push(parsed);
+            } else if (parsed.voices && Array.isArray(parsed.voices)) {
+              // chatterbox format: { "voices": [...] }
+              voiceConfigs.push(parsed.voices.map((v: string) => ({ name: v, locale: "en-US" })));
+            }
+            
+            logger.debug(`Loaded voice config from: ${filePath}`);
+            break; // Found this file, stop trying other paths
+          }
+        } catch (error) {
+          // Continue trying other paths
+        }
+      }
+    }
+    
+    // Look for the voice in the loaded configs
+    return Transcription.getVoiceLocale(voice, voiceConfigs);
   }
 }

@@ -222,6 +222,36 @@ export class TTS {
     }
   }
 
+  /**
+   * Get detailed voice information including locale
+   */
+  async getVoiceWithLocale(voice: string, provider: TTSProvider): Promise<{ name: string; locale?: string } | null> {
+    try {
+      // Try to get detailed voice info from the API
+      const voicesApiUrl = this.baseUrl.includes('/api') ? this.baseUrl : `${this.baseUrl}/api`;
+      const response = await fetch(`${voicesApiUrl}/voices/${provider}?detailed=true`);
+      
+      if (!response.ok) {
+        return null;
+      }
+      
+      const voices = await response.json();
+      
+      // If voices is an array of objects with locale info, find the matching voice
+      if (Array.isArray(voices)) {
+        const matchingVoice = voices.find((v: any) => v.name === voice);
+        if (matchingVoice && matchingVoice.locale) {
+          return { name: voice, locale: matchingVoice.locale };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      logger.debug({ error, voice, provider }, "Could not get detailed voice info from API");
+      return null;
+    }
+  }
+
   listAvailableVoices(): string[] {
     return Object.values(TTSVoice);
   }

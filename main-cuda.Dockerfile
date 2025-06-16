@@ -83,6 +83,7 @@ RUN pnpm build
 
 FROM base
 COPY static /app/static
+COPY voices /app/voices
 COPY --from=install-whisper /app/data/libs/whisper /app/data/libs/whisper
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist

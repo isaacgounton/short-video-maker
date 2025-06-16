@@ -44,6 +44,7 @@ RUN pnpm build
 
 FROM base
 COPY static /app/static
+COPY voices /app/voices
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
 COPY package.json /app/

@@ -341,9 +341,9 @@ The evolution of ${searchTerm} continues to show potential for growth and refine
         throw new Error("Invalid AI response structure");
       }
 
-      // Transform to our expected format
+      // Transform to our expected format and clean up hashtags
       const scenes: SceneInput[] = parsedResult.scenes.map((scene: any) => ({
-        text: scene.text || "",
+        text: (scene.text || "").replace(/#[\w_]+(\s|$)/g, '').trim(), // Remove hashtags from text
         searchTerms: Array.isArray(scene.searchTerms) ? scene.searchTerms : []
       }));
 
@@ -435,7 +435,10 @@ The evolution of ${searchTerm} continues to show potential for growth and refine
     if (keyPoints.length > 0) {
       // Use actual content points
       for (let i = 0; i < Math.min(6, keyPoints.length); i++) {
-        const point = keyPoints[i].trim().replace(/^\*\*|\*\*$/g, ''); // Remove markdown bold
+        const point = keyPoints[i].trim()
+          .replace(/^\*\*|\*\*$/g, '') // Remove markdown bold
+          .replace(/#[\w_]+(\s|$)/g, '') // Remove hashtags
+          .trim();
         if (point) {
           scenes.push({
             text: point.length > 200 ? point.substring(0, 200) + "..." : point,
@@ -547,6 +550,8 @@ Transform this research into 4-6 video scenes that:
 - Base search terms on ACTUAL subjects discussed in the research
 - Each scene must reference concrete information from the research
 - Make it suitable for TikTok/YouTube Shorts style content
+- Do NOT include hashtags (#) in the scene text - narration should be clean spoken text only
+- Focus on conversational, natural speech patterns without social media elements
 
 === EXAMPLE STRUCTURE ===
 Scene 1: Hook with a specific fact/statistic from research
