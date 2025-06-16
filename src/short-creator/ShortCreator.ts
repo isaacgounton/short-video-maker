@@ -199,10 +199,11 @@ export class ShortCreator {
               logger.debug({ voice, voiceLocale, language }, "Detected language from static files fallback");
             }
           } catch (error) {
-            logger.warn({ error, voice, provider }, "Could not detect voice language, transcription may be less accurate");
-          }          
-          // Transcribe using file path directly (since localhost URLs won't be accessible from external services)
-          captions = await this.transcription.transcribeFromFilePath(tempMp3Path, {
+            logger.warn({ error, voice, provider }, "Could not detect voice language, transcription may be less accurate");          }
+          
+          // Transcribe using the MP3 file URL (the transcription service will detect localhost and use file upload)
+          const mp3Url = `http://localhost:${this.config.port}/api/tmp/${tempMp3FileName}`;
+          captions = await this.transcription.transcribeFromUrl(mp3Url, {
             language,
             wordTimestamps: true,
             maxWordsPerLine: 8
