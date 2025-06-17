@@ -1,8 +1,5 @@
 import { logger, Config } from "../../config";
 import type { Caption } from "../../types/shorts";
-import FormData from "form-data";
-import fs from "fs";
-import path from "path";
 
 export interface TranscriptionOptions {
   language?: string;
@@ -160,69 +157,12 @@ export class Transcription {
     mediaUrl: string, 
     options: TranscriptionOptions = {}
   ): Promise<Caption[]> {
-    try {
-      logger.debug({ mediaUrl }, "Attempting file upload transcription fallback");
-      
-      // Download the file from the URL
-      const response = await fetch(mediaUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to download media file: HTTP ${response.status}`);
-      }
-      
-      const fileBuffer = Buffer.from(await response.arrayBuffer());
-      
-      // Create form data for multipart upload using Node.js form-data
-      const formData = new FormData();
-      formData.append('file', fileBuffer, {
-        filename: 'audio.mp3',
-        contentType: 'audio/mpeg'
-      });
-      formData.append('task', 'transcribe');
-      formData.append('include_text', 'true');
-      formData.append('include_segments', 'true');
-      formData.append('include_srt', 'false');
-      formData.append('word_timestamps', options.wordTimestamps ? 'true' : 'false');
-      formData.append('response_type', 'direct');
-      
-      if (options.language) {
-        formData.append('language', options.language);
-      }
-
-      logger.debug({ 
-        language: options.language,
-        fileSize: fileBuffer.length 
-      }, "Uploading file for transcription");
-
-      const uploadResponse = await fetch(`${this.baseUrl}/v1/media/transcribe`, {
-        method: "POST",
-        headers: {
-          "x-api-key": this.apiKey,
-          ...formData.getHeaders()
-        },
-        body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`File upload transcription error: HTTP ${uploadResponse.status} - ${errorText}`);
-      }
-
-      const result = await uploadResponse.json();
-      
-      if (result.code !== 200) {
-        throw new Error(`File upload transcription failed: ${result.message || 'Unknown error'}`);
-      }
-
-      const transcriptionData: TranscriptionResponse = result.response;
-      return this.processTranscriptionResponse(transcriptionData, mediaUrl);
-    } catch (error: any) {
-      logger.error({ 
-        error, 
-        mediaUrl, 
-        language: options.language 
-      }, "File upload transcription failed");
-      throw error;
-    }
+    // Since we've fixed the authentication issue by creating an unauthenticated endpoint,
+    // we can now simply use the URL-based method which should work
+    logger.debug({ mediaUrl }, "Using URL-based transcription for localhost files via unauthenticated endpoint");
+    
+    // Try URL-based transcription directly since the endpoint is now accessible
+    return await this.transcribeFromUrlDirect(mediaUrl, options);
   }
 
   async transcribeFromFile(

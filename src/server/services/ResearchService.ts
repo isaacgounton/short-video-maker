@@ -100,7 +100,9 @@ export class ResearchService {
           model: 'sonar-pro',
           messages: [{
             role: 'user',
-            content: `Research this topic in detail for ${targetLanguage} language. Provide comprehensive information, key points, statistics, examples, and relevant context with real facts and data: ${searchTerm}. Include specific details, numbers, and concrete examples wherever possible.`
+            content: `Please provide comprehensive information about: ${searchTerm}
+
+Respond in ${targetLanguage} language. Include relevant facts, statistics, examples, and current information about this topic.`
           }],
           max_tokens: 4000,
           temperature: 0.7
