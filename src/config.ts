@@ -44,6 +44,7 @@ export class Config {
   public ttsApiUrl: string = defaultTtsApiUrl;
   public transcriptionApiUrl: string = defaultTranscriptionApiUrl;
   public transcriptionApiKey: string;
+  public publicUrl: string;
 
   // Authentication configuration
   public authUsername: string;
@@ -85,6 +86,7 @@ export class Config {
     this.ttsApiUrl = process.env.TTS_API_URL || defaultTtsApiUrl;
     this.transcriptionApiUrl = process.env.TRANSCRIPTION_API_URL || defaultTranscriptionApiUrl;
     this.transcriptionApiKey = process.env.DAHOPEVI_API_KEY || "";
+    this.publicUrl = process.env.PUBLIC_URL || `http://localhost:${this.port}`;
     
     // Authentication configuration
     this.authUsername = process.env.AUTH_USERNAME || "etugrand";

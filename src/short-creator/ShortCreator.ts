@@ -221,7 +221,7 @@ export class ShortCreator {
             logger.warn({ error, voice, provider }, "Could not detect voice language, transcription may be less accurate");          }
           
           // Transcribe using the MP3 file URL (using unauthenticated endpoint for transcription service)
-          const mp3Url = `http://localhost:${this.config.port}/tmp/${tempMp3FileName}`;
+          const mp3Url = `${this.config.publicUrl}/tmp/${tempMp3FileName}`;
           captions = await this.transcription.transcribeFromUrl(mp3Url, {
             language,
             wordTimestamps: true,
