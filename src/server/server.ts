@@ -6,6 +6,8 @@ import type {
   Response as ExpressResponse,
 } from "express";
 import path from "path";
+import fs from "fs-extra";
+import os from "os";
 import { ShortCreator } from "../short-creator/ShortCreator";
 import { APIRouter } from "./routers/rest";
 import { MCPRouter } from "./routers/mcp";
@@ -13,6 +15,104 @@ import { AuthRouter } from "./routers/auth";
 import { requireAuth, redirectIfNotAuthenticated } from "./middleware/auth";
 import { logger } from "../logger";
 import { Config } from "../config";
+
+// Simple file-based session store for production use
+class FileSessionStore extends session.Store {
+  private sessionsDir: string;
+
+  constructor(sessionsDir: string) {
+    super();
+    this.sessionsDir = sessionsDir;
+    fs.ensureDirSync(this.sessionsDir);
+    
+    // Clean up expired sessions every hour
+    setInterval(() => {
+      this.cleanupExpiredSessions();
+    }, 60 * 60 * 1000);
+  }
+
+  get(sid: string, callback: (err?: any, session?: session.SessionData | null) => void): void {
+    const sessionPath = path.join(this.sessionsDir, `${sid}.json`);
+    
+    fs.readFile(sessionPath, 'utf8', (err, data) => {
+      if (err) {
+        if (err.code === 'ENOENT') {
+          return callback(null, null);
+        }
+        return callback(err);
+      }
+      
+      try {
+        const sessionData = JSON.parse(data);
+        
+        // Check if session has expired
+        if (sessionData.expires && new Date(sessionData.expires) < new Date()) {
+          this.destroy(sid, () => {});
+          return callback(null, null);
+        }
+        
+        callback(null, sessionData.data);
+      } catch (parseErr) {
+        callback(parseErr);
+      }
+    });
+  }
+
+  set(sid: string, session: session.SessionData, callback?: (err?: any) => void): void {
+    const sessionPath = path.join(this.sessionsDir, `${sid}.json`);
+    const expires = session.cookie?.expires || new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    const sessionFile = {
+      data: session,
+      expires: expires
+    };
+
+    fs.writeFile(sessionPath, JSON.stringify(sessionFile), 'utf8', (err) => {
+      if (callback) callback(err);
+    });
+  }
+
+  destroy(sid: string, callback?: (err?: any) => void): void {
+    const sessionPath = path.join(this.sessionsDir, `${sid}.json`);
+    
+    fs.unlink(sessionPath, (err) => {
+      if (err && err.code !== 'ENOENT') {
+        if (callback) callback(err);
+        return;
+      }
+      if (callback) callback();
+    });
+  }
+
+  private cleanupExpiredSessions(): void {
+    fs.readdir(this.sessionsDir, (err, files) => {
+      if (err) {
+        logger.warn(err, 'Failed to read sessions directory for cleanup');
+        return;
+      }
+
+      files.forEach(file => {
+        if (file.endsWith('.json')) {
+          const sessionPath = path.join(this.sessionsDir, file);
+          
+          fs.readFile(sessionPath, 'utf8', (readErr, data) => {
+            if (readErr) return;
+            
+            try {
+              const sessionData = JSON.parse(data);
+              if (sessionData.expires && new Date(sessionData.expires) < new Date()) {
+                fs.unlink(sessionPath, () => {});
+              }
+            } catch (parseErr) {
+              // Invalid session file, remove it
+              fs.unlink(sessionPath, () => {});
+            }
+          });
+        }
+      });
+    });
+  }
+}
 
 export class Server {
   private app: express.Application;
@@ -22,8 +122,13 @@ export class Server {
     this.config = config;
     this.app = express();
 
-    // Configure session middleware
+    // Create sessions directory
+    const sessionsDir = path.join(config.tempDirPath, '..', 'sessions');
+    const sessionStore = new FileSessionStore(sessionsDir);
+
+    // Configure session middleware with file-based store
     this.app.use(session({
+      store: sessionStore,
       secret: config.sessionSecret,
       resave: false,
       saveUninitialized: false,

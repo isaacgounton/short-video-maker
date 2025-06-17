@@ -88,7 +88,19 @@ export class Config {
     
     // Authentication configuration
     this.authUsername = process.env.AUTH_USERNAME || "etugrand";
-    this.authPasswordHash = process.env.AUTH_PASSWORD_HASH || bcrypt.hashSync("O0UgSbS4cbOmFa", 10);
+    
+    // If AUTH_PASSWORD_HASH is provided and looks like a bcrypt hash, use it directly
+    // Otherwise, if it's a plain password or not provided, hash it
+    const envPasswordHash = process.env.AUTH_PASSWORD_HASH;
+    if (envPasswordHash && envPasswordHash.startsWith('$2')) {
+      // Already a bcrypt hash
+      this.authPasswordHash = envPasswordHash;
+    } else {
+      // Plain text password or default, needs to be hashed
+      const plainPassword = envPasswordHash || "O0UgSbS4cbOmFa";
+      this.authPasswordHash = bcrypt.hashSync(plainPassword, 10);
+    }
+    
     this.sessionSecret = process.env.SESSION_SECRET || "your-super-secret-session-key-change-this-in-production";
     
     this.concurrency = process.env.CONCURRENCY
