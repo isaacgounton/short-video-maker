@@ -307,11 +307,18 @@ export class ShortCreator {
     }
 
     const selectedMusic = this.findMusic(totalDuration, config.music);
-    logger.debug({ selectedMusic, videoDuration: totalDuration }, "Selected music for the video");
+    
+    // Update music URL to use unauthenticated endpoint for Remotion
+    const musicForRemotion = {
+      ...selectedMusic,
+      url: `${this.config.publicUrl}/music/${encodeURIComponent(selectedMusic.file)}`
+    };
+    
+    logger.debug({ selectedMusic: musicForRemotion, videoDuration: totalDuration }, "Selected music for the video");
 
     await this.remotion.render(
       {
-        music: selectedMusic,
+        music: musicForRemotion,
         scenes,
         config: {
           durationMs: totalDuration * 1000,

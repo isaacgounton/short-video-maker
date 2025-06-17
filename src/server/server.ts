@@ -195,6 +195,36 @@ export class Server {
       tmpFileStream.pipe(res);
     });
 
+    // Serve music files without authentication (needed for Remotion rendering)
+    this.app.get("/music/:fileName", (req: ExpressRequest, res: ExpressResponse) => {
+      const { fileName } = req.params;
+      if (!fileName) {
+        res.status(400).json({
+          error: "fileName is required",
+        });
+        return;
+      }
+      const musicFilePath = path.join(config.musicDirPath, fileName);
+      if (!fs.existsSync(musicFilePath)) {
+        res.status(404).json({
+          error: "music file not found",
+        });
+        return;
+      }
+
+      res.setHeader("Content-Type", "audio/mpeg");
+      
+      const musicFileStream = fs.createReadStream(musicFilePath);
+      musicFileStream.on("error", (error: Error) => {
+        logger.error(error, "Error reading music file");
+        res.status(500).json({
+          error: "Error reading music file",
+          fileName,
+        });
+      });
+      musicFileStream.pipe(res);
+    });
+
     // Serve the React app for all other routes with authentication check
     this.app.use(express.static(path.join(__dirname, "../../dist/ui")));
     
