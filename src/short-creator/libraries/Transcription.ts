@@ -1,5 +1,8 @@
 import { logger, Config } from "../../config";
 import type { Caption } from "../../types/shorts";
+import FormData from "form-data";
+import fs from "fs";
+import path from "path";
 
 export interface TranscriptionOptions {
   language?: string;
@@ -166,12 +169,14 @@ export class Transcription {
         throw new Error(`Failed to download media file: HTTP ${response.status}`);
       }
       
-      const fileBuffer = await response.arrayBuffer();
-      const blob = new Blob([fileBuffer], { type: 'audio/mpeg' });
+      const fileBuffer = Buffer.from(await response.arrayBuffer());
       
-      // Create form data for multipart upload
+      // Create form data for multipart upload using Node.js form-data
       const formData = new FormData();
-      formData.append('file', blob, 'audio.mp3');
+      formData.append('file', fileBuffer, {
+        filename: 'audio.mp3',
+        contentType: 'audio/mpeg'
+      });
       formData.append('task', 'transcribe');
       formData.append('include_text', 'true');
       formData.append('include_segments', 'true');
@@ -185,13 +190,14 @@ export class Transcription {
 
       logger.debug({ 
         language: options.language,
-        fileSize: fileBuffer.byteLength 
+        fileSize: fileBuffer.length 
       }, "Uploading file for transcription");
 
       const uploadResponse = await fetch(`${this.baseUrl}/v1/media/transcribe`, {
         method: "POST",
         headers: {
           "x-api-key": this.apiKey,
+          ...formData.getHeaders()
         },
         body: formData,
       });

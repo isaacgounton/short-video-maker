@@ -220,8 +220,8 @@ export class ShortCreator {
           } catch (error) {
             logger.warn({ error, voice, provider }, "Could not detect voice language, transcription may be less accurate");          }
           
-          // Transcribe using the MP3 file URL (the transcription service will detect localhost and use file upload)
-          const mp3Url = `http://localhost:${this.config.port}/api/tmp/${tempMp3FileName}`;
+          // Transcribe using the MP3 file URL (using unauthenticated endpoint for transcription service)
+          const mp3Url = `http://localhost:${this.config.port}/tmp/${tempMp3FileName}`;
           captions = await this.transcription.transcribeFromUrl(mp3Url, {
             language,
             wordTimestamps: true,
@@ -273,9 +273,9 @@ export class ShortCreator {
 
         scenes.push({
           captions,
-          video: `http://localhost:${this.config.port}/api/tmp/${tempVideoFileName}`,
+          video: `http://localhost:${this.config.port}/tmp/${tempVideoFileName}`,
           audio: {
-            url: `http://localhost:${this.config.port}/api/tmp/${tempMp3FileName}`,
+            url: `http://localhost:${this.config.port}/tmp/${tempMp3FileName}`,
             duration: audioLength,
           },
         });

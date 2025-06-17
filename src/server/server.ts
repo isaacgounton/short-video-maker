@@ -157,6 +157,44 @@ export class Server {
     // Serve static files from the UI build (no auth required for assets)
     this.app.use("/static", express.static(path.join(__dirname, "../../static")));
 
+    // Serve temporary files without authentication (needed for transcription service)
+    this.app.get("/tmp/:tmpFile", (req: ExpressRequest, res: ExpressResponse) => {
+      const { tmpFile } = req.params;
+      if (!tmpFile) {
+        res.status(400).json({
+          error: "tmpFile is required",
+        });
+        return;
+      }
+      const tmpFilePath = path.join(config.tempDirPath, tmpFile);
+      if (!fs.existsSync(tmpFilePath)) {
+        res.status(404).json({
+          error: "tmpFile not found",
+        });
+        return;
+      }
+
+      if (tmpFile.endsWith(".mp3")) {
+        res.setHeader("Content-Type", "audio/mpeg");
+      }
+      if (tmpFile.endsWith(".wav")) {
+        res.setHeader("Content-Type", "audio/wav");
+      }
+      if (tmpFile.endsWith(".mp4")) {
+        res.setHeader("Content-Type", "video/mp4");
+      }
+
+      const tmpFileStream = fs.createReadStream(tmpFilePath);
+      tmpFileStream.on("error", (error: Error) => {
+        logger.error(error, "Error reading tmp file");
+        res.status(500).json({
+          error: "Error reading tmp file",
+          tmpFile,
+        });
+      });
+      tmpFileStream.pipe(res);
+    });
+
     // Serve the React app for all other routes with authentication check
     this.app.use(express.static(path.join(__dirname, "../../dist/ui")));
     
