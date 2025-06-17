@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import {
   AppBar,
   Box,
@@ -14,6 +15,7 @@ import {
 import VideoIcon from '@mui/icons-material/VideoLibrary';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -36,6 +38,12 @@ const theme = createTheme({
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -64,8 +72,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               color="inherit" 
               startIcon={<AddIcon />}
               onClick={() => navigate('/create')}
+              sx={{ mr: 1 }}
             >
               Create Video
+            </Button>
+            <Button 
+              color="inherit" 
+              startIcon={<LogoutIcon />}
+              onClick={handleLogout}
+            >
+              Logout
             </Button>
           </Toolbar>
         </AppBar>

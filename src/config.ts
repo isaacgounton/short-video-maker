@@ -3,6 +3,7 @@ import "dotenv/config";
 import os from "os";
 import fs from "fs-extra";
 import pino from "pino";
+import bcrypt from "bcryptjs";
 
 const defaultLogLevel: pino.Level = "info";
 const defaultPort = 3123;
@@ -44,6 +45,11 @@ export class Config {
   public transcriptionApiUrl: string = defaultTranscriptionApiUrl;
   public transcriptionApiKey: string;
 
+  // Authentication configuration
+  public authUsername: string;
+  public authPasswordHash: string;
+  public sessionSecret: string;
+
   // docker-specific, performance-related settings to prevent memory issues
   public concurrency?: number;
   public videoCacheSizeInBytes: number | null = null;
@@ -79,6 +85,11 @@ export class Config {
     this.ttsApiUrl = process.env.TTS_API_URL || defaultTtsApiUrl;
     this.transcriptionApiUrl = process.env.TRANSCRIPTION_API_URL || defaultTranscriptionApiUrl;
     this.transcriptionApiKey = process.env.DAHOPEVI_API_KEY || "";
+    
+    // Authentication configuration
+    this.authUsername = process.env.AUTH_USERNAME || "etugrand";
+    this.authPasswordHash = process.env.AUTH_PASSWORD_HASH || bcrypt.hashSync("O0UgSbS4cbOmFa", 10);
+    this.sessionSecret = process.env.SESSION_SECRET || "your-super-secret-session-key-change-this-in-production";
     
     this.concurrency = process.env.CONCURRENCY
       ? parseInt(process.env.CONCURRENCY)
