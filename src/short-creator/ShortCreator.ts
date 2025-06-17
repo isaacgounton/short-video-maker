@@ -122,21 +122,30 @@ export class ShortCreator {
         // Generate audio with the configured provider and voice
         logger.debug(`Generating audio for scene text: "${scene.text.substring(0, 50)}${scene.text.length > 50 ? '...' : ''}"`);
         
-        // Determine the provider and validate voice compatibility
-        const provider = config.provider ?? TTSProvider.Kokoro;
+        // Determine the provider and validate voice compatibility ONCE for the entire video
+        // This prevents different voices from being used across scenes
+        let provider = config.provider ?? TTSProvider.Kokoro;
         let voice = config.voice;
         
-        // If no voice is specified, or if the specified voice is incompatible with the provider,
-        // select a default voice for the provider
-        if (!voice || !await this.isVoiceCompatibleWithProvider(voice, provider)) {
-          voice = await this.getDefaultVoiceForProvider(provider);
-          if (config.voice && config.voice !== voice) {
-            logger.warn({
-              originalVoice: config.voice,
-              selectedVoice: voice,
-              provider
-            }, "Original voice is incompatible with provider, using default voice");
+        // Only do voice compatibility check on the first scene to ensure consistency
+        if (index === 0) {
+          if (!voice || !await this.isVoiceCompatibleWithProvider(voice, provider)) {
+            voice = await this.getDefaultVoiceForProvider(provider);
+            if (config.voice && config.voice !== voice) {
+              logger.warn({
+                originalVoice: config.voice,
+                selectedVoice: voice,
+                provider
+              }, "Original voice is incompatible with provider, using default voice for entire video");
+            }
+            // Update the config to use the validated voice for all subsequent scenes
+            config.voice = voice;
+            config.provider = provider;
           }
+        } else {
+          // Use the voice and provider from config that was validated in the first scene
+          voice = config.voice!;
+          provider = config.provider!;
         }
         
         const audio = await this.tts.generate(
@@ -150,6 +159,16 @@ export class ShortCreator {
         // Validate audio buffer to prevent processing empty audio
         if (!audioStream || audioStream.byteLength === 0) {
           throw new Error(`Invalid audio buffer received from TTS. Buffer size: ${audioStream?.byteLength || 0} bytes`);
+        }
+        
+        // Validate audio duration to prevent very short scenes
+        if (audioLength < 1.0) {
+          logger.warn({
+            sceneIndex: index,
+            audioLength,
+            textLength: scene.text.length,
+            text: scene.text.substring(0, 100)
+          }, "Scene has very short duration (< 1 second), this might cause timing issues");
         }
         
         logger.debug(`Audio generated successfully. Format: ${audioFormat}, Buffer size: ${audioStream.byteLength} bytes, Duration: ${audioLength}s`);
@@ -273,8 +292,22 @@ export class ShortCreator {
       totalDuration += config.paddingBack / 1000;
     }
 
+    // Add detailed logging for duration issues
+    logger.info({
+      totalScenes: inputScenes.length,
+      individualSceneDurations: scenes.map(s => s.audio.duration),
+      totalDuration,
+      paddingBack: config.paddingBack,
+      estimatedVideoLength: `${Math.floor(totalDuration / 60)}:${String(Math.floor(totalDuration % 60)).padStart(2, '0')}`
+    }, "Video duration calculation completed");
+
+    // Validate minimum video duration
+    if (totalDuration < 5) {
+      logger.warn({ totalDuration }, "Video duration is very short (< 5 seconds), this might cause rendering issues");
+    }
+
     const selectedMusic = this.findMusic(totalDuration, config.music);
-    logger.debug({ selectedMusic }, "Selected music for the video");
+    logger.debug({ selectedMusic, videoDuration: totalDuration }, "Selected music for the video");
 
     await this.remotion.render(
       {

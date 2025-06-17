@@ -74,18 +74,17 @@ export const LandscapeVideo: React.FC<z.infer<typeof shortVideoSchema>> = ({
           scenes.slice(0, i).reduce((acc, curr) => {
             return acc + curr.audio.duration;
           }, 0) * fps;
-        let durationInFrames =
-          scenes.slice(0, i + 1).reduce((acc, curr) => {
-            return acc + curr.audio.duration;
-          }, 0) * fps;
+        
+        // Calculate individual scene duration, not cumulative
+        let sceneDurationInFrames = scene.audio.duration * fps;
         if (config.paddingBack && i === scenes.length - 1) {
-          durationInFrames += (config.paddingBack / 1000) * fps;
+          sceneDurationInFrames += (config.paddingBack / 1000) * fps;
         }
 
         return (
           <Sequence
             from={startFrame}
-            durationInFrames={durationInFrames}
+            durationInFrames={sceneDurationInFrames}
             key={`scene-${i}`}
           >
             <OffthreadVideo src={video} muted />
