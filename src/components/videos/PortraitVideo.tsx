@@ -76,9 +76,10 @@ export const PortraitVideo: React.FC<z.infer<typeof shortVideoSchema>> = ({
           }, 0) * fps;
         
         // Calculate individual scene duration, not cumulative
-        let sceneDurationInFrames = scene.audio.duration * fps;
+        // Ensure scene duration matches the actual audio duration
+        let sceneDurationInFrames = Math.ceil(scene.audio.duration * fps);
         if (config.paddingBack && i === scenes.length - 1) {
-          sceneDurationInFrames += (config.paddingBack / 1000) * fps;
+          sceneDurationInFrames += Math.ceil((config.paddingBack / 1000) * fps);
         }
 
         return (

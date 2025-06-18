@@ -316,12 +316,16 @@ export class ShortCreator {
     
     logger.debug({ selectedMusic: musicForRemotion, videoDuration: totalDuration }, "Selected music for the video");
 
+    // Ensure the total duration accounts for precise frame calculations
+    // Add a small buffer to prevent cutoff issues (100ms)
+    const safeTotalDuration = totalDuration + 0.1;
+
     await this.remotion.render(
       {
         music: musicForRemotion,
         scenes,
         config: {
-          durationMs: totalDuration * 1000,
+          durationMs: safeTotalDuration * 1000,
           paddingBack: config.paddingBack,
           ...{
             captionBackgroundColor: config.captionBackgroundColor,
