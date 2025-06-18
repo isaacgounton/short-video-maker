@@ -129,11 +129,14 @@ export const renderConfig = z.object({
   orientation: z
     .nativeEnum(OrientationEnum)
     .optional()
-    .describe("Orientation of the video, default is portrait"),
-  musicVolume: z
+    .describe("Orientation of the video, default is portrait"),  musicVolume: z
     .nativeEnum(MusicVolumeEnum)
     .optional()
     .describe("Volume of the music, default is high"),
+  language: z
+    .string()
+    .optional()
+    .describe("Language code for transcription (e.g., 'en', 'es', 'fr'). If provided, bypasses automatic language detection from voice."),
 });
 export type RenderConfig = z.infer<typeof renderConfig>;
 

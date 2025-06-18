@@ -197,28 +197,37 @@ export class ShortCreator {
           logger.debug("Saving audio as MP3");
           await this.ffmpeg.saveToMp3(audioStream, tempMp3Path, audioFormat);
             // Use dahopevi transcription service for multilingual support
-          logger.debug("Generating captions with dahopevi transcription service");
-          
-          // Get voice locale to determine language for transcription
+          logger.debug("Generating captions with dahopevi transcription service");          // Get voice locale to determine language for transcription
           let voiceLocale: string | undefined;
           let language: string | undefined;
-          
-          try {
-            // Get voice locale dynamically from TTS service instead of static files
-            const voiceWithLocale = await this.tts.getVoiceWithLocale(voice, provider);            if (voiceWithLocale && voiceWithLocale.locale) {
-              voiceLocale = voiceWithLocale.locale;
-              language = Transcription.getLanguageFromVoice(voiceLocale);
-              logger.debug({ voice, voiceLocale, language }, "Detected language from TTS API");
-            } else {
-              // Fallback: try to load from static files for any provider that doesn't support locale API
-              voiceLocale = await this.getVoiceLocaleFromFiles(voice);
-              if (voiceLocale) {
+            // Check if manual language override is provided
+          if (config.language) {
+            language = config.language;
+            logger.debug({ 
+              voice, 
+              manualLanguage: language 
+            }, "Using manual language override for transcription");
+          } else {
+            // Auto-detect language from voice
+            try {
+              // Get voice locale dynamically from TTS service instead of static files
+              const voiceWithLocale = await this.tts.getVoiceWithLocale(voice, provider);
+              if (voiceWithLocale && voiceWithLocale.locale) {
+                voiceLocale = voiceWithLocale.locale;
                 language = Transcription.getLanguageFromVoice(voiceLocale);
+                logger.debug({ voice, voiceLocale, language }, "Detected language from TTS API");
+              } else {
+                // Fallback: try to load from static files for any provider that doesn't support locale API
+                voiceLocale = await this.getVoiceLocaleFromFiles(voice);
+                if (voiceLocale) {
+                  language = Transcription.getLanguageFromVoice(voiceLocale);
+                }
+                logger.debug({ voice, voiceLocale, language }, "Detected language from static files fallback");
               }
-              logger.debug({ voice, voiceLocale, language }, "Detected language from static files fallback");
+            } catch (error) {
+              logger.warn({ error, voice, provider }, "Could not detect voice language, transcription may be less accurate");
             }
-          } catch (error) {
-            logger.warn({ error, voice, provider }, "Could not detect voice language, transcription may be less accurate");          }
+          }
           
           // Transcribe using the MP3 file URL (using unauthenticated endpoint for transcription service)
           const mp3Url = `${this.config.publicUrl}/tmp/${tempMp3FileName}`;

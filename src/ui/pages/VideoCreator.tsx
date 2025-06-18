@@ -49,6 +49,7 @@ const VideoCreator: React.FC = () => {
     provider: TTSProvider.Kokoro,
     orientation: OrientationEnum.portrait,
     musicVolume: MusicVolumeEnum.high,
+    language: undefined, // Optional language override
   });
 
   const [loading, setLoading] = useState(false);
@@ -444,6 +445,41 @@ const VideoCreator: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Transcription Language (Optional)</InputLabel>
+                <Select
+                  value={config.language || ""}
+                  onChange={(e) =>
+                    handleConfigChange("language", e.target.value || undefined)
+                  }
+                  label="Transcription Language (Optional)"
+                  displayEmpty
+                >
+                  <MenuItem value="">
+                    <em>Auto-detect from voice</em>
+                  </MenuItem>
+                  <MenuItem value="en">English</MenuItem>
+                  <MenuItem value="es">Spanish</MenuItem>
+                  <MenuItem value="fr">French</MenuItem>
+                  <MenuItem value="de">German</MenuItem>
+                  <MenuItem value="it">Italian</MenuItem>
+                  <MenuItem value="pt">Portuguese</MenuItem>
+                  <MenuItem value="ru">Russian</MenuItem>
+                  <MenuItem value="ja">Japanese</MenuItem>
+                  <MenuItem value="ko">Korean</MenuItem>
+                  <MenuItem value="zh">Chinese</MenuItem>
+                  <MenuItem value="ar">Arabic</MenuItem>
+                  <MenuItem value="hi">Hindi</MenuItem>
+                  <MenuItem value="nl">Dutch</MenuItem>
+                  <MenuItem value="pl">Polish</MenuItem>
+                </Select>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                  Override automatic language detection for caption generation
+                </Typography>
               </FormControl>
             </Grid>
           </Grid>

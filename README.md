@@ -291,6 +291,7 @@ You can access the web interface at http://localhost:3123
 | provider               | The TTS provider. Options: `kokoro`, `openai-edge-tts`, `chatterbox`                                          | `kokoro`   |
 | orientation            | The video orientation. Possible options are `portrait` and `landscape`                                         | `portrait` |
 | musicVolume            | Set the volume of the background music. Possible options are `low` `medium` `high` and `muted`                 | `high`     |
+| language               | Language code for transcription (e.g., 'en', 'es', 'fr'). If provided, bypasses automatic language detection. | auto-detect |
 
 # Usage
 
