@@ -30,6 +30,9 @@ export class TTS {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(process.env.TTS_API_KEY
+            ? { Authorization: `Bearer ${process.env.TTS_API_KEY}` }
+            : {}),
         },
         body: JSON.stringify({
           text,
