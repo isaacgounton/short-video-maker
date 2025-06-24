@@ -12,7 +12,7 @@ import { ShortCreator } from "../short-creator/ShortCreator";
 import { APIRouter } from "./routers/rest";
 import { MCPRouter } from "./routers/mcp";
 import { AuthRouter } from "./routers/auth";
-import { requireAuth, redirectIfNotAuthenticated } from "./middleware/auth";
+import { requireAuthOrApiKey, requireAuth, redirectIfNotAuthenticated } from "./middleware/auth";
 import { logger } from "../logger";
 import { Config } from "../config";
 
@@ -151,8 +151,8 @@ export class Server {
     // Protected API routes
     const apiRouter = new APIRouter(config, shortCreator);
     const mcpRouter = new MCPRouter(shortCreator);
-    this.app.use("/api", requireAuth, apiRouter.router);
-    this.app.use("/mcp", requireAuth, mcpRouter.router);
+    this.app.use("/api", requireAuthOrApiKey, apiRouter.router);
+    this.app.use("/mcp", requireAuthOrApiKey, mcpRouter.router);
 
     // Serve static files from the UI build (no auth required for assets)
     this.app.use("/static", express.static(path.join(__dirname, "../../static")));
