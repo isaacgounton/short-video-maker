@@ -379,5 +379,113 @@ export class APIRouter {
         }
       },
     );
+
+    // AI-powered creation assistance endpoints
+    this.router.post(
+      "/generate-scenes-from-topic",
+      async (req: ExpressRequest, res: ExpressResponse) => {
+        try {
+          const { topic, language = "en" } = req.body;
+          
+          if (!topic || typeof topic !== 'string') {
+            res.status(400).json({ error: "Topic is required and must be a string" });
+            return;
+          }
+
+          const researchService = createResearchService(
+            process.env.PERPLEXITY_API_KEY,
+            process.env.DEEPSEEK_API_KEY,
+            process.env.GOOGLE_SEARCH_API_KEY,
+            process.env.GOOGLE_SEARCH_ENGINE_ID
+          );
+
+          const scenes = await researchService.generateScenesFromTopic(topic, language);
+          res.status(200).json({ scenes });
+
+        } catch (error) {
+          logger.error(error, "Error generating scenes from topic");
+          res.status(500).json({
+            error: "Failed to generate scenes from topic",
+            message: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      },
+    );
+
+    this.router.post(
+      "/generate-search-terms",
+      async (req: ExpressRequest, res: ExpressResponse) => {
+        try {
+          const { sceneText } = req.body;
+          
+          if (!sceneText || typeof sceneText !== 'string') {
+            res.status(400).json({ error: "Scene text is required and must be a string" });
+            return;
+          }
+
+          const researchService = createResearchService(
+            process.env.PERPLEXITY_API_KEY,
+            process.env.DEEPSEEK_API_KEY,
+            process.env.GOOGLE_SEARCH_API_KEY,
+            process.env.GOOGLE_SEARCH_ENGINE_ID
+          );
+
+          const searchTerms = await researchService.generateSearchTerms(sceneText);
+          res.status(200).json({ searchTerms });
+
+        } catch (error) {
+          logger.error(error, "Error generating search terms");
+          res.status(500).json({
+            error: "Failed to generate search terms",
+            message: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      },
+    );
+
+    this.router.post(
+      "/auto-configure-settings",
+      async (req: ExpressRequest, res: ExpressResponse) => {
+        try {
+          const { scenes } = req.body;
+          
+          if (!scenes || !Array.isArray(scenes)) {
+            res.status(400).json({ error: "Scenes array is required" });
+            return;
+          }
+
+          // Validate scenes format
+          const validScenes = scenes.every(scene => 
+            scene && 
+            typeof scene.text === 'string' && 
+            Array.isArray(scene.searchTerms)
+          );
+
+          if (!validScenes) {
+            res.status(400).json({ 
+              error: "Each scene must have 'text' (string) and 'searchTerms' (array)" 
+            });
+            return;
+          }
+
+          const researchService = createResearchService(
+            process.env.PERPLEXITY_API_KEY,
+            process.env.DEEPSEEK_API_KEY,
+            process.env.GOOGLE_SEARCH_API_KEY,
+            process.env.GOOGLE_SEARCH_ENGINE_ID
+          );
+
+          const config = await researchService.autoConfigureSettings(scenes);
+          res.status(200).json({ config });
+
+        } catch (error) {
+          logger.error(error, "Error auto-configuring settings");
+          res.status(500).json({
+            error: "Failed to auto-configure settings",
+            message: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      },
+    );
   }
 }

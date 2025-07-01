@@ -20,6 +20,9 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import SearchIcon from "@mui/icons-material/Search";
+import TuneIcon from "@mui/icons-material/Tune";
 import {
   SceneInput,
   RenderConfig,
@@ -53,6 +56,7 @@ const VideoCreator: React.FC = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingAI, setLoadingAI] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voices, setVoices] = useState<string[]>([]);
   const [providers, setProviders] = useState<TTSProvider[]>([]);
@@ -197,6 +201,114 @@ const VideoCreator: React.FC = () => {
     }
   };
 
+  // AI-powered helper functions
+  const handleGenerateScenes = async (sceneIndex: number) => {
+    const currentText = scenes[sceneIndex].text.trim();
+    if (!currentText) {
+      setError("Please enter some text first to generate scenes");
+      return;
+    }
+
+    setLoadingAI(true);
+    setError(null);
+
+    try {
+      const response = await axios.post("/api/generate-scenes-from-topic", {
+        topic: currentText,
+        language: config.language || "en"
+      });
+
+      if (response.data.scenes && response.data.scenes.length > 0) {
+        const newScenes = response.data.scenes.map((scene: any) => ({
+          text: scene.text,
+          searchTerms: scene.searchTerms.join(", ")
+        }));
+
+        // Replace current scenes with generated ones
+        setScenes(newScenes);
+      }
+    } catch (err) {
+      setError("Failed to generate scenes. Please try again.");
+      console.error(err);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  const handleGenerateSearchTerms = async (sceneIndex: number) => {
+    const currentText = scenes[sceneIndex].text.trim();
+    if (!currentText) {
+      setError("Please enter scene text first to generate search terms");
+      return;
+    }
+
+    setLoadingAI(true);
+    setError(null);
+
+    try {
+      const response = await axios.post("/api/generate-search-terms", {
+        sceneText: currentText
+      });
+
+      if (response.data.searchTerms && response.data.searchTerms.length > 0) {
+        const newScenes = [...scenes];
+        newScenes[sceneIndex].searchTerms = response.data.searchTerms.join(", ");
+        setScenes(newScenes);
+      }
+    } catch (err) {
+      setError("Failed to generate search terms. Please try again.");
+      console.error(err);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  const handleAutoConfigureSettings = async () => {
+    // Check if we have valid scenes
+    const validScenes = scenes.filter(scene => 
+      scene.text.trim() && scene.searchTerms.trim()
+    );
+
+    if (validScenes.length === 0) {
+      setError("Please add at least one scene with text and search terms first");
+      return;
+    }
+
+    setLoadingAI(true);
+    setError(null);
+
+    try {
+      // Convert scenes to API format
+      const apiScenes = validScenes.map(scene => ({
+        text: scene.text,
+        searchTerms: scene.searchTerms
+          .split(",")
+          .map((term) => term.trim())
+          .filter((term) => term.length > 0)
+      }));
+
+      const response = await axios.post("/api/auto-configure-settings", {
+        scenes: apiScenes
+      });
+
+      if (response.data.config) {
+        const aiConfig = response.data.config;
+        setConfig(prevConfig => ({
+          ...prevConfig,
+          ...(aiConfig.music && { music: aiConfig.music }),
+          ...(aiConfig.captionPosition && { captionPosition: aiConfig.captionPosition }),
+          ...(aiConfig.orientation && { orientation: aiConfig.orientation }),
+          ...(aiConfig.provider && { provider: aiConfig.provider }),
+        }));
+      }
+    } catch (err) {
+      setError("Failed to auto-configure settings. Please try again.");
+      console.error(err);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
   if (loadingOptions) {
     return (
       <Box
@@ -260,6 +372,26 @@ const VideoCreator: React.FC = () => {
                   }
                   required
                 />
+                <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<AutoAwesomeIcon />}
+                    onClick={() => handleGenerateScenes(index)}
+                    disabled={loadingAI}
+                  >
+                    {loadingAI ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SearchIcon />}
+                    onClick={() => handleGenerateSearchTerms(index)}
+                    disabled={loadingAI || !scene.text.trim()}
+                  >
+                    Search Terms
+                  </Button>
+                </Box>
               </Grid>
 
               <Grid item xs={12}>
@@ -429,14 +561,14 @@ const VideoCreator: React.FC = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Volume of the background audio</InputLabel>
+              <FormControl fullWidth sx={{ mb: 1 }}>
+                <InputLabel>Music Volume</InputLabel>
                 <Select
                   value={config.musicVolume}
                   onChange={(e) =>
                     handleConfigChange("musicVolume", e.target.value)
                   }
-                  label="Volume of the background audio"
+                  label="Music Volume"
                   required
                 >
                   {Object.values(MusicVolumeEnum).map((voice) => (
@@ -449,14 +581,14 @@ const VideoCreator: React.FC = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Transcription Language (Optional)</InputLabel>
+              <FormControl fullWidth sx={{ mb: 1 }}>
+                <InputLabel>Language (Optional)</InputLabel>
                 <Select
                   value={config.language || ""}
                   onChange={(e) =>
                     handleConfigChange("language", e.target.value || undefined)
                   }
-                  label="Transcription Language (Optional)"
+                  label="Language (Optional)"
                   displayEmpty
                 >
                   <MenuItem value="">
@@ -484,6 +616,17 @@ const VideoCreator: React.FC = () => {
             </Grid>
           </Grid>
         </Paper>
+
+        <Box display="flex" justifyContent="center" sx={{ mb: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<TuneIcon />}
+            onClick={handleAutoConfigureSettings}
+            disabled={loadingAI || scenes.length === 0}
+          >
+            {loadingAI ? 'Configuring...' : 'Configure Settings'}
+          </Button>
+        </Box>
 
         <Box display="flex" justifyContent="center">
           <Button

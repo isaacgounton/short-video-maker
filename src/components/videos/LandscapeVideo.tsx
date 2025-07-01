@@ -70,10 +70,9 @@ export const LandscapeVideo: React.FC<z.infer<typeof shortVideoSchema>> = ({
         });
 
         // Calculate the start and end time of the scene
-        const startFrame =
-          scenes.slice(0, i).reduce((acc, curr) => {
-            return acc + curr.audio.duration;
-          }, 0) * fps;
+        const startFrame = scenes.slice(0, i).reduce((acc, curr) => {
+          return acc + Math.ceil(curr.audio.duration * fps);
+        }, 0);
         
         // Calculate individual scene duration, not cumulative
         // Ensure scene duration matches the actual audio duration

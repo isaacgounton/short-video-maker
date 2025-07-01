@@ -539,6 +539,46 @@ curl --location 'localhost:3123/api/generate-scenes' \
 }
 ```
 
+# Authentication
+
+Both the REST API and MCP endpoints require authentication. You can authenticate using either:
+- A Bearer token (API key) in the `Authorization` header
+- A valid session cookie (for browser-based access)
+
+## Using the API Key (Bearer Token)
+
+Set the `API_KEY` environment variable in your `.env` file or Docker environment. To authenticate with the API, include the following header in your requests:
+
+```
+Authorization: Bearer <your-api-key>
+```
+
+### Example: Authenticated REST API Request
+
+```bash
+curl --location 'localhost:3123/api/short-video' \
+--header 'Authorization: Bearer <your-api-key>' \
+--header 'Content-Type: application/json' \
+--data '{
+    "scenes": [
+      {
+        "text": "Hello world!",
+        "searchTerms": ["river"]
+      }
+    ],
+    "config": {
+      "paddingBack": 1500,
+      "music": "chill",
+      "provider": "kokoro",
+      "voice": "af_heart"
+    }
+}'
+```
+
+> **Note:** All `/api/*` and `/mcp/*` endpoints require authentication. If you do not provide a valid API key or session, you will receive a 401 Unauthorized error.
+
+---
+
 # Troubleshooting
 
 ## Voice-Provider Compatibility Errors

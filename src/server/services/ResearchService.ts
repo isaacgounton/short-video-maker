@@ -582,6 +582,314 @@ Return ONLY this JSON structure:
   }
 }`;
   }
+
+  /**
+   * Generate scenes from a simple topic or partial text (for /create page)
+   */
+  async generateScenesFromTopic(topic: string, targetLanguage: string = "en"): Promise<SceneInput[]> {
+    if (!this.deepSeekApiKey) {
+      // Fallback when no AI available
+      return this.generateBasicScenes(topic, targetLanguage);
+    }
+
+    try {
+      const prompt = `You are a video script writer. Create 3-4 engaging video scenes about: "${topic}"
+
+Requirements:
+- Each scene should be 30-50 words (12-20 seconds when spoken)
+- Write in ${targetLanguage} language
+- Make it engaging for short-form video content
+- Include specific, visual search terms for each scene
+
+Format your response as JSON:
+{
+  "scenes": [
+    {
+      "text": "Scene narration text here",
+      "searchTerms": ["keyword1", "keyword2", "keyword3", "keyword4"]
+    }
+  ]
+}`;
+
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this.deepSeekApiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 1000,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`DeepSeek API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      
+      // Extract JSON from response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No valid JSON found in AI response");
+      }
+
+      const result = JSON.parse(jsonMatch[0]);
+      return result.scenes || [];
+
+    } catch (error) {
+      logger.warn(error, "Failed to generate scenes with AI, using fallback");
+      return this.generateBasicScenes(topic, targetLanguage);
+    }
+  }
+
+  /**
+   * Generate search terms for existing scene text
+   */
+  async generateSearchTerms(sceneText: string): Promise<string[]> {
+    if (!this.deepSeekApiKey && !this.googleApiKey) {
+      // Fallback: extract keywords from text
+      return this.extractKeywordsFromText(sceneText);
+    }
+
+    try {
+      // First try AI-based term generation
+      if (this.deepSeekApiKey) {
+        const prompt = `Extract 4-6 specific, visual keywords for finding background video footage for this scene:
+
+"${sceneText}"
+
+Return only the keywords as a JSON array, focusing on:
+- Visual concepts that can be filmed
+- Specific objects, actions, or scenes
+- Avoid abstract concepts
+
+Format: ["keyword1", "keyword2", "keyword3", "keyword4"]`;
+
+        const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.deepSeekApiKey}`,
+          },
+          body: JSON.stringify({
+            model: "deepseek-chat",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.3,
+            max_tokens: 200,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices[0].message.content;
+          const arrayMatch = content.match(/\[[\s\S]*?\]/);
+          if (arrayMatch) {
+            const terms = JSON.parse(arrayMatch[0]);
+            if (Array.isArray(terms) && terms.length > 0) {
+              return terms.slice(0, 6);
+            }
+          }
+        }
+      }
+
+      // Fallback to Google Custom Search for trending terms
+      if (this.googleApiKey && this.searchEngineId) {
+        const searchQuery = sceneText.substring(0, 100);
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${this.googleApiKey}&cx=${this.searchEngineId}&q=${encodeURIComponent(searchQuery)}&num=3`;
+        
+        const response = await fetch(searchUrl);
+        if (response.ok) {
+          const data = await response.json();
+          const terms: string[] = [];
+          
+          if (data.items) {
+            data.items.forEach((item: any) => {
+              // Extract keywords from titles and snippets
+              const text = `${item.title} ${item.snippet}`.toLowerCase();
+              const words = text.match(/\b[a-z]{3,}\b/g) || [];
+              terms.push(...words.slice(0, 2));
+            });
+          }
+          
+          if (terms.length > 0) {
+            return [...new Set(terms)].slice(0, 6);
+          }
+        }
+      }
+
+    } catch (error) {
+      logger.warn(error, "Failed to generate search terms with external APIs");
+    }
+
+    // Final fallback
+    return this.extractKeywordsFromText(sceneText);
+  }
+
+  /**
+   * Auto-configure video settings based on scene content
+   */
+  async autoConfigureSettings(scenes: { text: string; searchTerms: string[] }[]): Promise<Partial<RenderConfig>> {
+    if (!this.deepSeekApiKey) {
+      return this.analyzeContentForSettings(scenes);
+    }
+
+    try {
+      const allText = scenes.map(s => s.text).join(' ');
+      const allTerms = scenes.flatMap(s => s.searchTerms).join(', ');
+      
+      const prompt = `Analyze this video content and suggest optimal settings:
+
+Content: ${allText}
+Keywords: ${allTerms}
+
+Based on the content type, tone, and subject matter, suggest the best configuration:
+
+1. Music mood (choose one): sad, melancholic, happy, euphoric, excited, chill, uneasy, angry, dark, hopeful, contemplative, funny
+2. Caption position (choose one): top, center, bottom  
+3. Orientation (choose one): portrait, landscape
+4. Voice provider preference: kokoro (best for English), openai-edge-tts (multilingual)
+
+Respond in JSON format:
+{
+  "music": "mood_here",
+  "captionPosition": "position_here", 
+  "orientation": "orientation_here",
+  "provider": "provider_here",
+  "reasoning": "Brief explanation of choices"
+}`;
+
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this.deepSeekApiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.3,
+          max_tokens: 300,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices[0].message.content;
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        
+        if (jsonMatch) {
+          const config = JSON.parse(jsonMatch[0]);
+          logger.info({ config }, "AI-generated configuration");
+          
+          return {
+            music: config.music,
+            captionPosition: config.captionPosition,
+            orientation: config.orientation,
+            provider: config.provider === 'kokoro' ? TTSProvider.Kokoro : TTSProvider.OpenAIEdge,
+          };
+        }
+      }
+
+    } catch (error) {
+      logger.warn(error, "Failed to auto-configure with AI, using content analysis");
+    }
+
+    return this.analyzeContentForSettings(scenes);
+  }
+
+  /**
+   * Basic scene generation fallback
+   */
+  private generateBasicScenes(topic: string, targetLanguage: string): SceneInput[] {
+    const cleanTopic = topic.toLowerCase().trim();
+    
+    // Generate basic scenes based on topic
+    const scenes: SceneInput[] = [
+      {
+        text: targetLanguage === 'en' 
+          ? `Let's explore ${topic} and discover what makes it fascinating.`
+          : `Explorons ${topic} et découvrons ce qui le rend fascinant.`,
+        searchTerms: [cleanTopic, "exploration", "discovery", "learning"]
+      },
+      {
+        text: targetLanguage === 'en'
+          ? `There are several key aspects of ${topic} that are worth understanding.`
+          : `Il y a plusieurs aspects clés de ${topic} qui valent la peine d'être compris.`,
+        searchTerms: [cleanTopic, "analysis", "understanding", "concepts"]
+      },
+      {
+        text: targetLanguage === 'en'
+          ? `The impact and applications of ${topic} are truly remarkable.`
+          : `L'impact et les applications de ${topic} sont vraiment remarquables.`,
+        searchTerms: [cleanTopic, "impact", "applications", "innovation"]
+      }
+    ];
+
+    return scenes;
+  }
+
+  /**
+   * Extract keywords from text (fallback method)
+   */
+  private extractKeywordsFromText(text: string): string[] {
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'under', 'over', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'they', 'them', 'their', 'there', 'where', 'when', 'what', 'who', 'why', 'how']);
+    
+    const words = text.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !stopWords.has(word))
+      .filter(word => /^[a-z]+$/.test(word));
+
+    // Get unique words and prioritize longer ones
+    const uniqueWords = [...new Set(words)];
+    const sortedWords = uniqueWords.sort((a, b) => b.length - a.length);
+    
+    return sortedWords.slice(0, 6);
+  }
+
+  /**
+   * Analyze content for settings (fallback method)
+   */
+  private analyzeContentForSettings(scenes: { text: string; searchTerms: string[] }[]): Partial<RenderConfig> {
+    const allText = scenes.map(s => s.text).join(' ').toLowerCase();
+    const allTerms = scenes.flatMap(s => s.searchTerms).join(' ').toLowerCase();
+    const content = `${allText} ${allTerms}`;
+
+    // Analyze sentiment and topic
+    let music = MusicMoodEnum.chill;
+    let captionPosition = CaptionPositionEnum.bottom;
+    let orientation = OrientationEnum.portrait;
+
+    // Music mood analysis
+    if (content.includes('happy') || content.includes('joy') || content.includes('celebration')) {
+      music = MusicMoodEnum.happy;
+    } else if (content.includes('exciting') || content.includes('energy') || content.includes('action')) {
+      music = MusicMoodEnum.excited;
+    } else if (content.includes('hope') || content.includes('inspiration') || content.includes('future')) {
+      music = MusicMoodEnum.hopeful;
+    } else if (content.includes('serious') || content.includes('professional') || content.includes('business')) {
+      music = MusicMoodEnum.contemplative;
+    } else if (content.includes('fun') || content.includes('humor') || content.includes('joke')) {
+      music = MusicMoodEnum.funny;
+    }
+
+    // Orientation analysis  
+    if (content.includes('landscape') || content.includes('wide') || content.includes('panorama') || content.includes('cinema')) {
+      orientation = OrientationEnum.landscape;
+    }
+
+    return {
+      music,
+      captionPosition,
+      orientation,
+      provider: TTSProvider.Kokoro, // Default to best quality for English
+    };
+  }
 }
 
 /**

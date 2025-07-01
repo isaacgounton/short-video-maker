@@ -3,6 +3,7 @@ import fs from "fs-extra";
 
 import { type Music, MusicForVideo, MusicMoodEnum } from "../types/shorts";
 import { Config } from "../config";
+import { logger } from "../logger";
 
 export class MusicManager {
   private static musicList: Music[] = [
@@ -199,6 +200,37 @@ export class MusicManager {
     return MusicManager.musicList.map((music: Music) => ({
       ...music,
       url: `http://localhost:${this.config.port}/api/music/${encodeURIComponent(music.file)}`,
+    }));
+  }
+
+  public musicListForRemotion(): MusicForVideo[] {
+    return MusicManager.musicList.map((music: Music) => ({
+      ...music,
+      url: path.join(this.config.musicDirPath, music.file),
+    }));
+  }
+
+  public ensureMusicFilesInTempDir(): void {
+    const tempMusicDir = path.join(this.config.tempDirPath, "music");
+    fs.ensureDirSync(tempMusicDir);
+    
+    for (const music of MusicManager.musicList) {
+      const sourcePath = path.join(this.config.musicDirPath, music.file);
+      const destPath = path.join(tempMusicDir, music.file);
+      
+      // Always copy to ensure fresh files for each render
+      if (fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, destPath);
+        logger.debug({ sourcePath, destPath }, "Copied music file to temp directory");
+      }
+    }
+  }
+
+  public musicListForRemotionFromTempDir(): MusicForVideo[] {
+    const tempMusicDir = path.join(this.config.tempDirPath, "music");
+    return MusicManager.musicList.map((music: Music) => ({
+      ...music,
+      url: path.join(tempMusicDir, music.file),
     }));
   }
   private musicFileExist(music: Music): boolean {

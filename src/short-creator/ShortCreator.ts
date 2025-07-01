@@ -24,6 +24,9 @@ import {
   MusicMoodEnum,
   MusicTag,
   MusicForVideo,
+  Music,
+  Caption,
+  Video,
 } from "../types/shorts";
 
 export class ShortCreator {
@@ -112,8 +115,8 @@ export class ShortCreator {
     let index = 0;
     for (const scene of inputScenes) {
       let audioLength: number;
-      let captions: any;
-      let video: any;
+      let captions: Caption[];
+      let video: Video;
       let tempVideoPath: string;
       let tempVideoFileName: string;
       let tempMp3FileName: string;
@@ -130,7 +133,7 @@ export class ShortCreator {
         // Only do voice compatibility check on the first scene to ensure consistency
         if (index === 0) {
           if (!voice || !await this.isVoiceCompatibleWithProvider(voice, provider)) {
-            voice = await this.getDefaultVoiceForProvider(provider);
+            voice = await this.getDefaultVoiceForProvider(provider, config.language);
             if (config.voice && config.voice !== voice) {
               logger.warn({
                 originalVoice: config.voice,
@@ -297,9 +300,8 @@ export class ShortCreator {
 
       index++;
     }
-    if (config.paddingBack) {
-      totalDuration += config.paddingBack / 1000;
-    }
+    // Note: paddingBack is already included in the last scene's audioLength (line 178)
+    // so we don't need to add it again here
 
     // Add detailed logging for duration issues
     logger.info({
@@ -315,15 +317,15 @@ export class ShortCreator {
       logger.warn({ totalDuration }, "Video duration is very short (< 5 seconds), this might cause rendering issues");
     }
 
-    const selectedMusic = this.findMusic(totalDuration, config.music);
+    const musicForRemotion = this.findMusic(totalDuration, config.music);
     
-    // Update music URL to use unauthenticated endpoint for Remotion
-    const musicForRemotion = {
-      ...selectedMusic,
-      url: `${this.config.publicUrl}/music/${encodeURIComponent(selectedMusic.file)}`
-    };
-    
-    logger.debug({ selectedMusic: musicForRemotion, videoDuration: totalDuration }, "Selected music for the video");
+    logger.info({ 
+      selectedMusic: musicForRemotion, 
+      videoDuration: totalDuration,
+      musicFilePath: musicForRemotion.url,
+      musicFileExists: fs.existsSync(musicForRemotion.url),
+      requestedMood: config.music
+    }, "Selected music for the video (using local file path)");
 
     // Ensure the total duration accounts for precise frame calculations
     // Add a small buffer to prevent cutoff issues (100ms)
@@ -373,7 +375,10 @@ export class ShortCreator {
   }
 
   private findMusic(videoDuration: number, tag?: MusicMoodEnum): MusicForVideo {
-    const musicFiles = this.musicManager.musicList().filter((music) => {
+    // Ensure music files are copied to temp directory for reliable access during rendering
+    this.musicManager.ensureMusicFilesInTempDir();
+    
+    const musicFiles = this.musicManager.musicListForRemotionFromTempDir().filter((music) => {
       if (tag) {
         return music.mood === tag;
       }
@@ -445,11 +450,47 @@ export class ShortCreator {
     }
   }
 
-  private async getDefaultVoiceForProvider(provider: TTSProvider): Promise<string> {
+  private async getDefaultVoiceForProvider(provider: TTSProvider, language?: string): Promise<string> {
     try {
       const availableVoices = await this.tts.getAvailableVoices(provider);
       if (availableVoices.length === 0) {
         throw new Error(`No voices available for provider ${provider}`);
+      }
+      
+      // If language is specified, try to find a voice that matches the language
+      if (language) {
+        const englishPrefixes = ['en-', 'en_'];
+        const languageSpecificVoices = availableVoices.filter(voice => {
+          const voiceLower = voice.toLowerCase();
+          if (language === 'en') {
+            return englishPrefixes.some(prefix => voiceLower.includes(prefix)) || 
+                   ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'].includes(voiceLower);
+          }
+          return voiceLower.includes(`${language}-`) || voiceLower.includes(`${language}_`);
+        });
+        
+        if (languageSpecificVoices.length > 0) {
+          return languageSpecificVoices[0];
+        }
+      }
+      
+      // Fallback: prefer common English voices for OpenAI Edge TTS
+      if (provider === TTSProvider.OpenAIEdge) {
+        const commonEnglishVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
+        const foundCommonVoice = availableVoices.find(voice => 
+          commonEnglishVoices.includes(voice.toLowerCase())
+        );
+        if (foundCommonVoice) {
+          return foundCommonVoice;
+        }
+        
+        // Look for any English voice
+        const englishVoice = availableVoices.find(voice => 
+          voice.toLowerCase().includes('en-') || voice.toLowerCase().includes('en_')
+        );
+        if (englishVoice) {
+          return englishVoice;
+        }
       }
       
       // Return the first available voice as default
@@ -475,7 +516,7 @@ export class ShortCreator {
    * Fallback method to get voice locale from static files
    */
   private async getVoiceLocaleFromFiles(voice: string): Promise<string | undefined> {
-    const voiceConfigs: any[] = [];
+    const voiceConfigs: unknown[] = [];
     
     // Try to load all 3 voice config files
     const voiceFiles = [
@@ -506,7 +547,7 @@ export class ShortCreator {
             logger.debug(`Loaded voice config from: ${filePath}`);
             break; // Found this file, stop trying other paths
           }
-        } catch (error) {
+        } catch {
           // Continue trying other paths
         }
       }
