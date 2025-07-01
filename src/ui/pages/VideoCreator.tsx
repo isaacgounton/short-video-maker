@@ -581,14 +581,14 @@ const VideoCreator: React.FC = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth sx={{ mb: 1 }}>
-                <InputLabel>Language (Optional)</InputLabel>
+              <FormControl fullWidth>
+                <InputLabel shrink={config.language !== "" || undefined}>Transcription Language (Optional)</InputLabel>
                 <Select
                   value={config.language || ""}
                   onChange={(e) =>
                     handleConfigChange("language", e.target.value || undefined)
                   }
-                  label="Language (Optional)"
+                  label="Transcription Language (Optional)"
                   displayEmpty
                 >
                   <MenuItem value="">

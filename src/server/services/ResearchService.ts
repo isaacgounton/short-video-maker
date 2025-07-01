@@ -593,21 +593,32 @@ Return ONLY this JSON structure:
     }
 
     try {
-      const prompt = `You are a voice-over script writer. Create 3-4 engaging narration scripts about: "${topic}"
+      const prompt = `You are a voice-over script writer. Create a cohesive narrative about: "${topic}"
 
 Requirements:
+- Determine the optimal number of scenes (2-6 scenes) based on the topic complexity and natural storytelling flow
 - Each scene should be 30-50 words (12-20 seconds when spoken)
 - Write in ${targetLanguage} language
+- ALL SCENES MUST BE SYNCHRONIZED and flow logically from one to the next
+- Create a continuous narrative where each scene builds upon the previous one
+- Scene 2 should connect naturally to Scene 1, Scene 3 to Scene 2, etc.
 - Write text that sounds NATURAL when spoken aloud by a voice-over artist
 - Use conversational, spoken language (not written text)
 - Avoid phrases like "this video" or "we will explore" - write as if you're talking directly to someone
 - Use contractions (don't, can't, it's) to sound more natural
-- Include specific, visual search terms for each scene
+- Include specific, visual search terms for each scene that support the narrative
 
-Examples of GOOD voice-over text:
-- "Imagine walking into a room where artificial intelligence can read your thoughts..."
-- "Here's something that'll blow your mind about quantum physics..."
-- "You know that feeling when technology just works perfectly? That's what we're talking about."
+Story Structure Guidelines:
+- Scene 1: Hook/Introduction - grab attention, introduce the main concept
+- Scene 2: Development - expand on the concept, provide context or examples
+- Scene 3: Deep dive - explore specific aspects, show practical applications
+- Scene 4: Impact/Consequences - show results, implications, or next steps
+- Additional scenes: Continue logical progression as needed
+
+Examples of GOOD synchronized scene flow:
+Scene 1: "Imagine if your smartphone could predict exactly what you're thinking..."
+Scene 2: "Well, that's not science fiction anymore. Brain-computer interfaces are already reading neural signals..."
+Scene 3: "Companies like Neuralink have successfully helped paralyzed patients control computers with their thoughts..."
 
 Examples of BAD voice-over text:
 - "This video will show you artificial intelligence..."

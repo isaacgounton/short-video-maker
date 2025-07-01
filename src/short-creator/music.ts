@@ -199,7 +199,7 @@ export class MusicManager {
   public musicList(): MusicForVideo[] {
     return MusicManager.musicList.map((music: Music) => ({
       ...music,
-      url: `http://localhost:${this.config.port}/api/music/${encodeURIComponent(music.file)}`,
+      url: `http://localhost:${this.config.port}/music/${encodeURIComponent(music.file)}`,
     }));
   }
 
