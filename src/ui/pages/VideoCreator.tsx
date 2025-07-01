@@ -609,9 +609,6 @@ const VideoCreator: React.FC = () => {
                   <MenuItem value="nl">Dutch</MenuItem>
                   <MenuItem value="pl">Polish</MenuItem>
                 </Select>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                  Override automatic language detection for caption generation
-                </Typography>
               </FormControl>
             </Grid>
           </Grid>
