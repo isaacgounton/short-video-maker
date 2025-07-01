@@ -593,19 +593,32 @@ Return ONLY this JSON structure:
     }
 
     try {
-      const prompt = `You are a video script writer. Create 3-4 engaging video scenes about: "${topic}"
+      const prompt = `You are a voice-over script writer. Create 3-4 engaging narration scripts about: "${topic}"
 
 Requirements:
 - Each scene should be 30-50 words (12-20 seconds when spoken)
 - Write in ${targetLanguage} language
-- Make it engaging for short-form video content
+- Write text that sounds NATURAL when spoken aloud by a voice-over artist
+- Use conversational, spoken language (not written text)
+- Avoid phrases like "this video" or "we will explore" - write as if you're talking directly to someone
+- Use contractions (don't, can't, it's) to sound more natural
 - Include specific, visual search terms for each scene
+
+Examples of GOOD voice-over text:
+- "Imagine walking into a room where artificial intelligence can read your thoughts..."
+- "Here's something that'll blow your mind about quantum physics..."
+- "You know that feeling when technology just works perfectly? That's what we're talking about."
+
+Examples of BAD voice-over text:
+- "This video will show you artificial intelligence..."
+- "In this section, we will explore quantum physics..."
+- "The following information demonstrates technology..."
 
 Format your response as JSON:
 {
   "scenes": [
     {
-      "text": "Scene narration text here",
+      "text": "Natural spoken narration text here",
       "searchTerms": ["keyword1", "keyword2", "keyword3", "keyword4"]
     }
   ]
@@ -808,24 +821,24 @@ Respond in JSON format:
   private generateBasicScenes(topic: string, targetLanguage: string): SceneInput[] {
     const cleanTopic = topic.toLowerCase().trim();
     
-    // Generate basic scenes based on topic
+    // Generate basic scenes with natural, spoken language
     const scenes: SceneInput[] = [
       {
         text: targetLanguage === 'en' 
-          ? `Let's explore ${topic} and discover what makes it fascinating.`
-          : `Explorons ${topic} et découvrons ce qui le rend fascinant.`,
+          ? `You know what's really fascinating about ${topic}? There's so much more to it than meets the eye.`
+          : `Vous savez ce qui est vraiment fascinant à propos de ${topic}? Il y a tellement plus que ce qu'on voit.`,
         searchTerms: [cleanTopic, "exploration", "discovery", "learning"]
       },
       {
         text: targetLanguage === 'en'
-          ? `There are several key aspects of ${topic} that are worth understanding.`
-          : `Il y a plusieurs aspects clés de ${topic} qui valent la peine d'être compris.`,
+          ? `Here's what most people don't realize about ${topic} - it's changing everything around us.`
+          : `Voici ce que la plupart des gens ne réalisent pas à propos de ${topic} - ça change tout autour de nous.`,
         searchTerms: [cleanTopic, "analysis", "understanding", "concepts"]
       },
       {
         text: targetLanguage === 'en'
-          ? `The impact and applications of ${topic} are truly remarkable.`
-          : `L'impact et les applications de ${topic} sont vraiment remarquables.`,
+          ? `The impact of ${topic} is absolutely incredible, and you're about to see why.`
+          : `L'impact de ${topic} est absolument incroyable, et vous allez voir pourquoi.`,
         searchTerms: [cleanTopic, "impact", "applications", "innovation"]
       }
     ];

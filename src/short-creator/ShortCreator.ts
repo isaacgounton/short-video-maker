@@ -322,10 +322,9 @@ export class ShortCreator {
     logger.info({ 
       selectedMusic: musicForRemotion, 
       videoDuration: totalDuration,
-      musicFilePath: musicForRemotion.url,
-      musicFileExists: fs.existsSync(musicForRemotion.url),
+      musicUrl: musicForRemotion.url,
       requestedMood: config.music
-    }, "Selected music for the video (using local file path)");
+    }, "Selected music for the video (using HTTP URL)");
 
     // Ensure the total duration accounts for precise frame calculations
     // Add a small buffer to prevent cutoff issues (100ms)
@@ -374,11 +373,9 @@ export class ShortCreator {
     return fs.readFileSync(videoPath);
   }
 
-  private findMusic(videoDuration: number, tag?: MusicMoodEnum): MusicForVideo {
-    // Ensure music files are copied to temp directory for reliable access during rendering
-    this.musicManager.ensureMusicFilesInTempDir();
-    
-    const musicFiles = this.musicManager.musicListForRemotionFromTempDir().filter((music) => {
+  private findMusic(_videoDuration: number, tag?: MusicMoodEnum): MusicForVideo {
+    // Use HTTP URLs for Remotion access instead of local file paths
+    const musicFiles = this.musicManager.musicList().filter((music) => {
       if (tag) {
         return music.mood === tag;
       }
