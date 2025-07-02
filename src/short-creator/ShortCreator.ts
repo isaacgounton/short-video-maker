@@ -246,8 +246,8 @@ export class ShortCreator {
             const lastCaption = captions[captions.length - 1];
             const actualSpeechDuration = lastCaption.endMs / 1000;
             
-            // Add a small buffer (200ms) to ensure complete speech playback
-            const adjustedDuration = actualSpeechDuration + 0.2;
+            // Add a small buffer (500ms) to ensure complete speech playback
+            const adjustedDuration = actualSpeechDuration + 0.5;
             
             logger.debug({
               originalTTSDuration: audioLength,
