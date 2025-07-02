@@ -221,7 +221,6 @@ export class MusicManager {
       // Always copy to ensure fresh files for each render
       if (fs.existsSync(sourcePath)) {
         fs.copyFileSync(sourcePath, destPath);
-        logger.debug({ sourcePath, destPath }, "Copied music file to temp directory");
       }
     }
   }

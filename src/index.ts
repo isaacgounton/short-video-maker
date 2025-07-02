@@ -25,9 +25,7 @@ async function main() {
 
   const musicManager = new MusicManager(config);
   try {
-    logger.debug("checking music files");
     musicManager.ensureMusicFilesExist();
-    logger.debug("preparing music files for rendering");
     musicManager.ensureMusicFilesInTempDir();
   } catch (error: unknown) {
     logger.error(error, "Missing music files");

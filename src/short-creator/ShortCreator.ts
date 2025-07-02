@@ -239,6 +239,35 @@ export class ShortCreator {
             wordTimestamps: true,
             maxWordsPerLine: 8
           });
+
+          // Use actual speech content duration instead of TTS file duration
+          // This prevents scenes from cutting off when TTS includes silence/padding
+          if (captions && captions.length > 0) {
+            const lastCaption = captions[captions.length - 1];
+            const actualSpeechDuration = lastCaption.endMs / 1000;
+            
+            // Add a small buffer (200ms) to ensure complete speech playback
+            const adjustedDuration = actualSpeechDuration + 0.2;
+            
+            logger.debug({
+              originalTTSDuration: audioLength,
+              actualSpeechDuration,
+              adjustedDuration,
+              sceneText: scene.text.substring(0, 50) + "..."
+            }, "Adjusting scene duration based on actual speech content");
+            
+            // Only use transcription duration if it's reasonable (not too different from TTS)
+            // This prevents issues with transcription errors
+            if (adjustedDuration > audioLength * 0.5 && adjustedDuration < audioLength * 1.5) {
+              audioLength = adjustedDuration;
+            } else {
+              logger.warn({
+                originalTTSDuration: audioLength,
+                actualSpeechDuration,
+                adjustedDuration
+              }, "Transcription duration seems incorrect, keeping original TTS duration");
+            }
+          }
           
         } catch (audioError) {
           logger.error({ error: audioError }, "Error processing audio files or generating captions");
