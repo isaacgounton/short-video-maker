@@ -11,7 +11,7 @@ const FPS = 25;
 export const calculateMetadata: CalculateMetadataFunction<
   z.infer<typeof shortVideoSchema>
 > = async ({ props }) => {
-  const durationInFrames = Math.floor((props.config.durationMs / 1000) * FPS);
+  const durationInFrames = Math.ceil((props.config.durationMs / 1000) * FPS);
   return {
     ...props,
     durationInFrames,

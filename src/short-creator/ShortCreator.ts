@@ -327,8 +327,8 @@ export class ShortCreator {
     }, "Selected music for the video (using HTTP URL)");
 
     // Ensure the total duration accounts for precise frame calculations
-    // Add a small buffer to prevent cutoff issues (100ms)
-    const safeTotalDuration = totalDuration + 0.1;
+    // Add a buffer to prevent cutoff issues from rounding errors (500ms)
+    const safeTotalDuration = totalDuration + 0.5;
 
     await this.remotion.render(
       {

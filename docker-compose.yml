@@ -12,4 +12,6 @@ services:
       - DOCKER=true
     ports:
       - "3123:3123"
+    volumes:
+      - ./data:/app/data
     entrypoint: ["node", "dist/index.js"]

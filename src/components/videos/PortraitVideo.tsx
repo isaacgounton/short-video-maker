@@ -87,7 +87,7 @@ export const PortraitVideo: React.FC<z.infer<typeof shortVideoSchema>> = ({
             durationInFrames={sceneDurationInFrames}
             key={`scene-${i}`}
           >
-            <OffthreadVideo src={video} muted />
+            <OffthreadVideo src={video} muted loop />
             <Audio src={audio.url} />
             {pages.map((page, j) => {
               return (

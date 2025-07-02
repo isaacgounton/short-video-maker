@@ -59,6 +59,10 @@ ENV CONCURRENCY=1
 # video cache - 2000MB
 ENV VIDEO_CACHE_SIZE_IN_BYTES=2097152000
 
+# Create data directory and declare it as a volume
+RUN mkdir -p /app/data
+VOLUME ["/app/data"]
+
 # install kokoro, headless chrome and ensure music files are present
 RUN node dist/scripts/install.js
 
