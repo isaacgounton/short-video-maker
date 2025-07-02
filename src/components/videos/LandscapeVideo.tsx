@@ -17,6 +17,32 @@ import {
 
 const { fontFamily } = loadFont(); // "Barlow Condensed"
 
+// Component to handle video looping by restarting when the video ends
+const LoopedVideo: React.FC<{ src: string; durationInFrames: number }> = ({ 
+  src, 
+  durationInFrames 
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  
+  // Assume most videos are around 30 seconds (750 frames at 25fps)
+  // This is a reasonable default that covers most stock footage
+  const estimatedVideoFrames = 750;
+  
+  // Calculate how many times the video should have looped by now
+  const loopCycle = Math.floor(frame / estimatedVideoFrames);
+  const frameInCurrentLoop = frame % estimatedVideoFrames;
+  
+  return (
+    <OffthreadVideo 
+      src={src} 
+      muted 
+      startFrom={frameInCurrentLoop}
+      key={`loop-${loopCycle}`} // Force re-render when loop cycle changes
+    />
+  );
+};
+
 export const LandscapeVideo: React.FC<z.infer<typeof shortVideoSchema>> = ({
   scenes,
   music,
@@ -87,7 +113,7 @@ export const LandscapeVideo: React.FC<z.infer<typeof shortVideoSchema>> = ({
             durationInFrames={sceneDurationInFrames}
             key={`scene-${i}`}
           >
-            <OffthreadVideo src={video} muted loop />
+            <LoopedVideo src={video} durationInFrames={sceneDurationInFrames} />
             <Audio src={audio.url} />
             {pages.map((page, j) => {
               return (
