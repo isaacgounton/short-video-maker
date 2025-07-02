@@ -127,6 +127,30 @@ export class FFMpeg {
         });
     });
   }
+  /**
+   * Get the actual duration of an audio file using FFprobe
+   */
+  async getAudioDuration(filePath: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(filePath, (err, metadata) => {
+        if (err) {
+          logger.error({ error: err, filePath }, "Error getting audio duration");
+          reject(err);
+          return;
+        }
+        
+        const duration = metadata?.format?.duration;
+        if (typeof duration === 'number') {
+          logger.debug({ filePath, duration }, "Got actual audio duration from file");
+          resolve(duration);
+        } else {
+          logger.warn({ filePath, metadata: metadata?.format }, "Could not determine audio duration");
+          reject(new Error("Could not determine audio duration"));
+        }
+      });
+    });
+  }
+
   async saveToMp3(audio: ArrayBuffer, filePath: string, inputFormat: string = 'auto'): Promise<string> {
     // Validate the audio buffer
     if (!audio || audio.byteLength === 0) {

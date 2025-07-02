@@ -92,7 +92,21 @@ export class TTS {
       }, "Audio buffer downloaded successfully");
       
       // Use the duration from the API response (in milliseconds) or estimate based on text length
-      const audioLength = result.duration ? result.duration / 1000 : text.split(" ").length * 0.3;
+      // Improved fallback estimation: average speaking rate is 2-3 words per second
+      const fallbackDuration = text.split(" ").length / 2.5; // More realistic than 0.3 multiplier
+      const apiDurationSeconds = result.duration ? result.duration / 1000 : null;
+      const audioLength = apiDurationSeconds || fallbackDuration;
+      
+      // Log duration calculation for debugging
+      logger.debug({
+        text: text.substring(0, 100) + (text.length > 100 ? "..." : ""),
+        textWordCount: text.split(" ").length,
+        apiDurationMs: result.duration,
+        apiDurationSeconds,
+        fallbackDuration,
+        finalAudioLength: audioLength,
+        audioBufferSize: audioBuffer.byteLength
+      }, "TTS duration calculation details");
 
       // Determine actual format from content, prioritizing header analysis
       let actualFormat = format; // Default to the requested format

@@ -170,8 +170,18 @@ export class ShortCreator {
             sceneIndex: index,
             audioLength,
             textLength: scene.text.length,
-            text: scene.text.substring(0, 100)
+            text: scene.text.substring(0, 100),
+            wordCount: scene.text.split(" ").length
           }, "Scene has very short duration (< 1 second), this might cause timing issues");
+          
+          // Apply minimum duration safeguard for very short scenes
+          const minimumDuration = Math.max(2.0, scene.text.split(" ").length / 2.0);
+          logger.warn({
+            originalDuration: audioLength,
+            minimumDuration,
+            sceneIndex: index
+          }, "Applying minimum duration safeguard to prevent cutoff");
+          audioLength = minimumDuration;
         }
         
         logger.debug(`Audio generated successfully. Format: ${audioFormat}, Buffer size: ${audioStream.byteLength} bytes, Duration: ${audioLength}s`);
@@ -199,6 +209,85 @@ export class ShortCreator {
         try {
           logger.debug("Saving audio as MP3");
           await this.ffmpeg.saveToMp3(audioStream, tempMp3Path, audioFormat);
+          
+          // Get the actual duration using Dahopevi API for maximum accuracy (if enabled)
+          if (this.config.useDahopeviDuration && this.config.transcriptionApiKey) {
+            try {
+              const mp3Url = `${this.config.publicUrl}/tmp/${tempMp3FileName}`;
+              const dahopeviDuration = await this.transcription.getMediaDuration(mp3Url);
+              
+              logger.debug({
+                ttsReportedDuration: audioLength,
+                dahopeviDuration: dahopeviDuration,
+                difference: Math.abs(audioLength - dahopeviDuration),
+                sceneIndex: index,
+                mp3Url
+              }, "Comparing TTS reported duration vs Dahopevi API duration");
+              
+              // Use Dahopevi duration as it's the most accurate (analyzed from actual audio file)
+              if (dahopeviDuration > 0) {
+                logger.info({
+                  originalDuration: audioLength,
+                  dahopeviDuration: dahopeviDuration,
+                  sceneIndex: index,
+                  text: scene.text.substring(0, 50) + "..."
+                }, "Using Dahopevi API duration for accurate scene timing");
+                audioLength = dahopeviDuration;
+              } else {
+                logger.warn({ dahopeviDuration, sceneIndex: index }, "Dahopevi API returned invalid duration, using TTS reported duration");
+              }
+            } catch (durationError) {
+              logger.warn({ error: durationError, sceneIndex: index }, "Could not get duration from Dahopevi API, trying local FFmpeg method");
+              
+              // Fallback to local FFmpeg duration detection
+              try {
+              const actualAudioDuration = await this.ffmpeg.getAudioDuration(tempMp3Path);
+              logger.debug({
+                ttsReportedDuration: audioLength,
+                actualFileDuration: actualAudioDuration,
+                difference: Math.abs(audioLength - actualAudioDuration),
+                sceneIndex: index
+              }, "Using FFmpeg duration as fallback");
+              
+              // Use the actual duration if the difference is significant (>0.5 seconds)
+              if (Math.abs(audioLength - actualAudioDuration) > 0.5) {
+                logger.warn({
+                  originalDuration: audioLength,
+                  actualDuration: actualAudioDuration,
+                  sceneIndex: index,
+                  text: scene.text.substring(0, 50) + "..."
+                }, "Using actual file duration due to significant difference from TTS reported duration");
+                audioLength = actualAudioDuration;
+              }
+              } catch (ffmpegError) {
+                logger.warn({ error: ffmpegError, sceneIndex: index }, "Could not get actual audio duration from FFmpeg either, using TTS reported duration");
+              }
+            }
+          } else {
+            // Dahopevi duration API is disabled, fallback to FFmpeg duration detection
+            try {
+              const actualAudioDuration = await this.ffmpeg.getAudioDuration(tempMp3Path);
+              logger.debug({
+                ttsReportedDuration: audioLength,
+                actualFileDuration: actualAudioDuration,
+                difference: Math.abs(audioLength - actualAudioDuration),
+                sceneIndex: index
+              }, "Using FFmpeg duration (Dahopevi API disabled)");
+              
+              // Use the actual duration if the difference is significant (>0.5 seconds)
+              if (Math.abs(audioLength - actualAudioDuration) > 0.5) {
+                logger.warn({
+                  originalDuration: audioLength,
+                  actualDuration: actualAudioDuration,
+                  sceneIndex: index,
+                  text: scene.text.substring(0, 50) + "..."
+                }, "Using actual file duration due to significant difference from TTS reported duration");
+                audioLength = actualAudioDuration;
+              }
+            } catch (ffmpegError) {
+              logger.warn({ error: ffmpegError, sceneIndex: index }, "Could not get actual audio duration from FFmpeg, using TTS reported duration");
+            }
+          }
             // Use dahopevi transcription service for multilingual support
           logger.debug("Generating captions with dahopevi transcription service");          // Get voice locale to determine language for transcription
           let voiceLocale: string | undefined;

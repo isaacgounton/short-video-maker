@@ -8,7 +8,7 @@ import bcrypt from "bcryptjs";
 const defaultLogLevel: pino.Level = "info";
 const defaultPort = 3123;
 const defaultTtsApiUrl = "https://tts.dahopevi.com/api";
-const defaultTranscriptionApiUrl = "https://api.dahopevi.com";
+const defaultDahopeviApiUrl = "https://api.dahopevi.com";
 
 // Create the global logger
 const versionNumber = process.env.npm_package_version;
@@ -42,9 +42,10 @@ export class Config {
   public runningInDocker: boolean;
   public devMode: boolean;
   public ttsApiUrl: string = defaultTtsApiUrl;
-  public transcriptionApiUrl: string = defaultTranscriptionApiUrl;
+  public transcriptionApiUrl: string = defaultDahopeviApiUrl;
   public transcriptionApiKey: string;
   public publicUrl: string;
+  public useDahopeviDuration: boolean = true;
 
   // Authentication configuration
   public authUsername: string;
@@ -84,9 +85,10 @@ export class Config {
     this.devMode = process.env.DEV === "true";
 
     this.ttsApiUrl = process.env.TTS_API_URL || defaultTtsApiUrl;
-    this.transcriptionApiUrl = process.env.TRANSCRIPTION_API_URL || defaultTranscriptionApiUrl;
+    this.transcriptionApiUrl = process.env.DAHOPEVI_API_URL || defaultDahopeviApiUrl;
     this.transcriptionApiKey = process.env.DAHOPEVI_API_KEY || "";
     this.publicUrl = process.env.PUBLIC_URL || `http://localhost:${this.port}`;
+    this.useDahopeviDuration = process.env.USE_DAHOPEVI_DURATION !== "false";
     
     // Authentication configuration
     this.authUsername = process.env.AUTH_USERNAME || "etugrand";

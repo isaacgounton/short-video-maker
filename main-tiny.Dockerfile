@@ -53,7 +53,7 @@ COPY package.json /app/
 ENV DATA_DIR_PATH=/app/data
 ENV DOCKER=true
 ENV TTS_API_URL=https://tts.dahopevi.com/api
-ENV TRANSCRIPTION_API_URL=https://api.dahopevi.com
+ENV DAHOPEVI_API_URL=https://api.dahopevi.com
 # number of chrome tabs to use for rendering (reduced for tiny)
 ENV CONCURRENCY=1
 # video cache - 1000MB (reduced for tiny)

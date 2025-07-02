@@ -47,8 +47,52 @@ export class Transcription {
     if (!this.apiKey) {
       logger.warn("DAHOPEVI_API_KEY not found. Please set the environment variable for transcription to work.");
     }
-    
-    logger.info({ baseUrl: this.baseUrl }, "Transcription service initialized");
+  }
+
+  /**
+   * Get accurate media duration using Dahopevi API
+   */
+  async getMediaDuration(mediaUrl: string): Promise<number> {
+    if (!this.apiKey) {
+      throw new Error("DAHOPEVI_API_KEY is required for media duration analysis");
+    }
+
+    try {
+      logger.debug({ mediaUrl }, "Getting media duration from Dahopevi API");
+
+      const response = await fetch(`${this.baseUrl}/v1/media/media-duration`, {
+        method: "POST",
+        headers: {
+          "x-api-key": this.apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          media_url: mediaUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Media duration API error: HTTP ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.code === 200 && typeof result.response === 'number') {
+        logger.debug({ 
+          mediaUrl, 
+          duration: result.response,
+          jobId: result.job_id 
+        }, "Got accurate media duration from Dahopevi API");
+        
+        return result.response;
+      } else {
+        throw new Error(`Media duration API returned unexpected response: ${JSON.stringify(result)}`);
+      }
+    } catch (error) {
+      logger.error({ error, mediaUrl }, "Failed to get media duration from Dahopevi API");
+      throw error;
+    }
   }
 
   async transcribeFromUrl(
